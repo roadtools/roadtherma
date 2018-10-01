@@ -1,0 +1,6 @@
+__pycache__
+config.py
+vim*
+*.png
+data/
+notes
