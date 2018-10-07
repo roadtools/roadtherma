@@ -7,6 +7,9 @@ percentage_above = 0.2
 # Temperature threshold for the road length estimation step
 roadlength_threshold = 80
 
+# Tolerance on the temperature difference during temperature gradient detection
+gradient_tolerance = 10
+
 # Data files that have received so far
 voegele_example = 'string containing data file here'
 voegele_taulov = 'string containing data file here'

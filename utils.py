@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import re
@@ -68,14 +69,13 @@ def estimate_road_edge_left(line, threshold):
 def estimate_road_length(df, threshold):
     values = df.values
     offsets = []
+    non_road_pixels = np.ones(values.shape, dtype='bool')
     for distance_idx in range(values.shape[0]):
         offset_start = estimate_road_edge_right(values[distance_idx, :], threshold)
-        values[distance_idx, :offset_start] = 190
-
         offset_end = estimate_road_edge_left(values[distance_idx, :], threshold)
-        values[distance_idx, offset_end:] = 190
+        non_road_pixels[distance_idx, offset_start:offset_end] = 0
         offsets.append((offset_start, offset_end))
-    return offsets
+    return offsets, non_road_pixels
 
 
 def plot_data(df):

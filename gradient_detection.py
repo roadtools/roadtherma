@@ -1,9 +1,10 @@
 import unittest
 import numpy as np
 
+from config import gradient_tolerance as tolerance
+
 
 def detect_high_gradient_pixels(df_temperature, offsets):
-    tolerance = 10 # degrees
     temperatures = df_temperature.values
     temperatures_gradient = np.zeros(temperatures.shape, dtype='bool')
 
