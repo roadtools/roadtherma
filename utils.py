@@ -67,12 +67,15 @@ def estimate_road_edge_left(line, threshold):
 
 def estimate_road_length(df, threshold):
     values = df.values
+    offsets = []
     for distance_idx in range(values.shape[0]):
-        offset = estimate_road_edge_right(values[distance_idx, :], threshold)
-        values[distance_idx, :offset] = 190
+        offset_start = estimate_road_edge_right(values[distance_idx, :], threshold)
+        values[distance_idx, :offset_start] = 190
 
-        offset = estimate_road_edge_left(values[distance_idx, :], threshold)
-        values[distance_idx, offset:] = 190
+        offset_end = estimate_road_edge_left(values[distance_idx, :], threshold)
+        values[distance_idx, offset_end:] = 190
+        offsets.append((offset_start, offset_end))
+    return offsets
 
 
 def plot_data(df):
