@@ -5,6 +5,12 @@ from config import gradient_tolerance as tolerance
 
 
 def detect_high_gradient_pixels(df_temperature, offsets):
+    """
+    Return a boolean array the same size as `df_temperature` indexing all pixels
+    having higher gradients than what is supplied in `config.gradient_tolerance`.
+    The `offsets` list contains the road section identified for each transversal
+    line (row) in the data.
+    """
     temperatures = df_temperature.values
     temperatures_gradient = np.zeros(temperatures.shape, dtype='bool')
 

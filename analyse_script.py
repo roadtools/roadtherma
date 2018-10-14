@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from data import import_TF, import_vogele_taulov, import_vogele_M119
-from utils import estimate_road_length, trim_temperature_columns, plot_data, split_temperature_data, merge_temperature_data
+from utils import estimate_road_length, trim_temperature, plot_data, split_temperature_data, merge_temperature_data
 from gradient_detection import detect_high_gradient_pixels
 import config as cfg
 
@@ -18,9 +18,8 @@ if __name__ == '__main__':
         plot_data(df_temperature, ax=ax1, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
 
         ### Plot trimmed data
-        df_temperature = trim_temperature_columns(df_temperature, cfg.trim_threshold, cfg.percentage_above)
-        df_temperature = trim_temperature_columns(df_temperature.T, cfg.trim_threshold, cfg.percentage_above).T
         ax2.set_title('Trimmed data')
+        df_temperature = trim_temperature(df_temperature)
         plot_data(df_temperature, ax=ax2, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
 
         ### Estimate what is actual road and which pixels have are part of high temperature gradients
