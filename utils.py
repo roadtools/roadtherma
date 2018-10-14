@@ -12,6 +12,7 @@ def split_temperature_data(df):
     df_rest = df[list(not_temperature)]
     return df_temperature, df_rest
 
+
 def merge_temperature_data(df_temp, df_rest):
     return pd.merge(df_temp, df_rest, how='inner', copy=True, left_index=True, right_index=True)
 
@@ -55,6 +56,7 @@ def estimate_road_edge_right(line, threshold):
             break
     return count
 
+
 def estimate_road_edge_left(line, threshold):
     cond = line < threshold
     count = len(line)
@@ -78,7 +80,7 @@ def estimate_road_length(df, threshold):
     return offsets, non_road_pixels
 
 
-def plot_data(df):
+def plot_data(df, **kwargs):
     columns = temperature_columns(df)
-    snsplot = sns.heatmap(df[columns], cmap='RdYlGn_r', vmin=60)#, square=True)
+    snsplot = sns.heatmap(df[columns], **kwargs)
     return snsplot

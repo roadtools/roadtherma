@@ -1,22 +1,38 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
-from data import import_TF, import_vogele_data
+from data import import_TF, import_vogele_taulov, import_vogele_M119
 from utils import estimate_road_length, trim_temperature_columns, plot_data, split_temperature_data, merge_temperature_data
 from gradient_detection import detect_high_gradient_pixels
 import config as cfg
 
 if __name__ == '__main__':
-    data = [import_vogele_data()] + list(import_TF())
+    data = [import_vogele_taulov(), import_vogele_M119()] + list(import_TF())
     for n, df in enumerate(data):
         print('Processing data file #', n)
+        fig, (ax1, ax2, ax3) = plt.subplots(ncols=3)
         df_temperature, df_rest = split_temperature_data(df)
+
+        ### Plot the raw data
+        ax1.set_title('Raw data')
+        plot_data(df_temperature, ax=ax1, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
+
+        ### Plot trimmed data
         df_temperature = trim_temperature_columns(df_temperature, cfg.trim_threshold, cfg.percentage_above)
         df_temperature = trim_temperature_columns(df_temperature.T, cfg.trim_threshold, cfg.percentage_above).T
+        ax2.set_title('Trimmed data')
+        plot_data(df_temperature, ax=ax2, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
+
+        ### Estimate what is actual road and which pixels have are part of high temperature gradients
         offsets, non_road_pixels = estimate_road_length(df_temperature, cfg.roadlength_threshold)
         high_temperature_gradients = detect_high_gradient_pixels(df_temperature, offsets)
-        df_temperature.values[high_temperature_gradients] = 40
-        df_temperature.values[non_road_pixels] = 190
+        normal_road_pixels = ~ (high_temperature_gradients | non_road_pixels) # Pixels identified as road without high temperature gradients
+        df_temperature.values[high_temperature_gradients] = np.max(df_temperature.values[normal_road_pixels]) + 20
+        df_temperature.values[non_road_pixels] = np.min(df_temperature.values[normal_road_pixels]) - 20
+        ax3.set_title('Estimated high gradients')
+        plot_data(df_temperature, ax=ax3, cmap='magma', cbar_kws={'label':'Black: Not road, Bright Yellow: High gradients detected'})
+
+        ### Merge the processed temperature data with the rest of the dataset
         df = merge_temperature_data(df_temperature, df_rest)
-        snsplot = plot_data(df)
-        plt.show()
         #plt.savefig("trimmed_data{}.png".format(n), dpi=800)
+        plt.show()
