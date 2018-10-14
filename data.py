@@ -18,21 +18,27 @@ VOEGELE_BASE_COLUMNS = ['time', 'distance', 'latitude', 'longitude']
 def import_vogele_example():
     """ Old example code. This is probably not going to be used. """
     columns = VOEGELE_BASE_COLUMNS + temperatures_voegele
-    df = pd.read_csv(cfg.voegele_example, skiprows=2, delimiter=';', names=columns)
-    df.temperatures = temperatures_voegele
+    df = pd.read_csv(cfg.voegele_example, skiprows=2, delimiter=';', names=columns, decimal=',')
     return df
 
 
-def import_vogele_data():
+def import_vogele_M119():
     """
-    Import real voegele data.
-    NOTE: The formatting of the data has changed from the example data above
+    Data similar to the example file.
+    NOTE removed last line in the file as it only contained 'Keine Daten vorhanden'.
+    """
+    columns = VOEGELE_BASE_COLUMNS + ['signal_quality'] + temperatures_voegele
+    df = pd.read_csv(cfg.voegele_M119, skiprows=2, delimiter=';', names=columns, decimal=',')
+    return df
+
+
+def import_vogele_taulov():
+    """
+    NOTE removed last line in the file as it only contained 'No data to display'.
     """
     import csv
-    # NOTE Removed last line from the original data-file since it only contained 'No data to display'
-    columns = VOEGELE_BASE_COLUMNS + ['sginal_quality'] + temperatures_voegele
+    columns = VOEGELE_BASE_COLUMNS + ['signal_quality'] + temperatures_voegele
     df = pd.read_csv(cfg.voegele_taulov, skiprows=3, delimiter=',', names=columns, quoting=csv.QUOTE_NONE, quotechar='"', doublequote=True)
-    df.temperatures = temperatures_voegele
     for col in df.columns:
         if col == 'time':
             df[col] = df[col].apply(lambda x:x.strip('"'))
@@ -42,4 +48,4 @@ def import_vogele_data():
 
 
 if __name__ == '__main__':
-    df = import_vogele_data()
+    df = import_vogele_M119()
