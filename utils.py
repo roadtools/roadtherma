@@ -36,7 +36,7 @@ def temperature_columns(df):
     return temperature_columns
 
 
-def trim_temperature(df, threshold, percentage_above):
+def trim_temperature(df):
     """
     Trim the dataframe such that all outer rows and columns that only contains
     `percentage_above` temperature values below `threshold` will be will be discarded.
