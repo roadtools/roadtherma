@@ -11,10 +11,11 @@ roadlength_threshold = 80
 gradient_tolerance = 10
 
 # Data files that have received so far
-voegele_example = 'string containing data file here'
-voegele_taulov = 'string containing data file here'
+voegele_example = ('plot title', 'string containing data file here')
+voegele_taulov = ('plot title', 'string containing data file here')
+voegele_M119 = ('plot title', 'string containing data file here')
 TF_M14_files = [
-        'string containing data file here'
-        'string containing data file here'
-        'string containing data file here'
+        ('plot title', 'string containing data file here'),
+        ('plot title', 'string containing data file here'),
+        ('plot title', 'string containing data file here')
         ]

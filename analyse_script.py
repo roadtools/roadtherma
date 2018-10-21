@@ -2,15 +2,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from data import import_TF, import_vogele_taulov, import_vogele_M119
-from utils import estimate_road_length, trim_temperature, plot_data, split_temperature_data, merge_temperature_data
+from utils import estimate_road_length, trim_temperature, plot_data, split_temperature_data, merge_temperature_data, calculate_velocity
 from gradient_detection import detect_high_gradient_pixels
 import config as cfg
 
 if __name__ == '__main__':
     data = [import_vogele_taulov(), import_vogele_M119()] + list(import_TF())
-    for n, df in enumerate(data):
-        print('Processing data file #', n)
+    for n, (title, df) in enumerate(data):
+        print('Processing data file #{} - {}'.format(n, title))
+        if 'TF' not in title:
+            # There is no timestamps in TF-data and thus no derivation of velocity
+            calculate_velocity(df)
+            print('Mean paving velocity {:.1f} m/min'.format(df.velocity.mean()))
+
         fig, (ax1, ax2, ax3) = plt.subplots(ncols=3)
+        fig.suptitle(title)
         df_temperature, df_rest = split_temperature_data(df)
 
         ### Plot the raw data

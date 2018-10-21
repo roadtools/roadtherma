@@ -106,6 +106,15 @@ def _estimate_road_edge_left(line, threshold):
     return count
 
 
+def calculate_velocity(df):
+    dist_diff = df.distance.diff() # [meter]
+    time_diff = df.time.diff() # [nanosecond]
+    dist_diff[0] = dist_diff[1]
+    time_diff[0] = time_diff[1]
+    time_diff = time_diff.astype('int') / (1e9 * 60) # convert [nanosecond] -> [minute]
+    df['velocity'] = dist_diff / time_diff # [meter / minute]
+
+
 def plot_data(df, **kwargs):
     """Make a heatmap of the temperature columns in the dataframe."""
     columns = temperature_columns(df)
