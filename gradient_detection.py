@@ -1,10 +1,20 @@
 import unittest
 import numpy as np
 
-from config import gradient_tolerance as tolerance
+TOLERANCE_RANGE_STEP = 0.5
+tol_start, tol_end = (5, 15)
+tolerances = np.arange(tol_start, tol_end, TOLERANCE_RANGE_STEP)
+
+def calculate_tolerance_vs_percentage_high_gradient(df_temperature, nroad_pixels, offsets, tolerances):
+    percentage_high_gradients = list()
+    for tolerance in tolerances:
+        high_gradients = detect_high_gradient_pixels(df_temperature, offsets, tolerance)
+        percentage_high_gradients.append((high_gradients.sum() / nroad_pixels) * 100)
+        #print('calculated percentage of high_gradient pixels (diff={}) of the road: {}'.format(tolerance, percentage_high_gradients[-1]))
+    return percentage_high_gradients
 
 
-def detect_high_gradient_pixels(df_temperature, offsets):
+def detect_high_gradient_pixels(df_temperature, offsets, tolerance):
     """
     Return a boolean array the same size as `df_temperature` indexing all pixels
     having higher gradients than what is supplied in `config.gradient_tolerance`.
