@@ -1,7 +1,8 @@
 import pickle
 import pandas as pd
 
-from utils import estimate_road_length, trim_temperature, split_temperature_data, merge_temperature_data
+from utils import split_temperature_data, merge_temperature_data
+from road_identification import trim_temperature, estimate_road_length
 from gradient_detection import detect_high_gradient_pixels, calculate_tolerance_vs_percentage_high_gradient
 import config as cfg
 

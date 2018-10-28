@@ -3,7 +3,7 @@ import numpy as np
 import seaborn as sns
 
 from data import PavementIRData
-from utils import plot_data, calculate_velocity
+from utils import calculate_velocity, temperature_columns
 import config as cfg
 
 def save_figures(figures):
@@ -12,13 +12,19 @@ def save_figures(figures):
         plt.savefig("{}{}.png".format(figure_name, n), dpi=1200)#, dpi=800)
 
 
-def discrete_matshow(ax, data):
+def categorical_heatmap(ax, data):
     cmap = plt.get_cmap('magma', np.max(data)-np.min(data)+1)
     # set limits .5 outside true range
     mat = ax.imshow(data, aspect='auto', cmap=cmap,vmin = np.min(data)-.5, vmax = np.max(data)+.5)
     #tell the colorbar to tick at integers
     cbar = plt.colorbar(mat, ticks=np.arange(np.min(data),np.max(data)+1))
     cbar.set_ticklabels(['lol1', 'lol2', 'lol3'])
+
+def temperature_heatmap(df, **kwargs):
+    """Make a heatmap of the temperature columns in the dataframe."""
+    columns = temperature_columns(df)
+    snsplot = sns.heatmap(df[columns], **kwargs)
+    return snsplot
 
 if __name__ == '__main__':
     for n, (title, filepath, reader) in enumerate(cfg.data_files):
@@ -41,11 +47,11 @@ if __name__ == '__main__':
 
         ### Plot the raw data
         ax1.set_title('Raw data')
-        plot_data(data.df_temperature_raw, ax=ax1, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
+        temperature_heatmap(data.df_temperature_raw, ax=ax1, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
 
         ### Plot trimmed data
         ax2.set_title('Trimmed data')
-        plot_data(data.df_temperature, ax=ax2, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
+        temperature_heatmap(data.df_temperature, ax=ax2, cmap='RdYlGn_r', cbar_kws={'label':'Temperature [C]'})
 
 
         ### Plot showing the percentage of road that is comprised of high gradient pixels for a given gradient tolerance
@@ -64,7 +70,7 @@ if __name__ == '__main__':
         df_temperature.values[data.normal_road_pixels] = 2
         df_temperature.values[data.high_temperature_gradients] = 3
         plt.figure(num=fig_heatmaps.number)
-        discrete_matshow(ax3, df_temperature.values)
+        categorical_heatmap(ax3, df_temperature.values)
 
         plt.show()
         #save_figures(figures)
