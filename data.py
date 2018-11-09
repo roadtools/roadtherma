@@ -6,6 +6,7 @@ from road_identification import trim_temperature, estimate_road_length
 from gradient_detection import detect_high_gradient_pixels, calculate_tolerance_vs_percentage_high_gradient
 import config as cfg
 
+
 def _read_TF(filename):
     temperatures = ['T{}'.format(n) for n in range(141)]
     columns = ['distance'] + temperatures + ['distance_again']
@@ -66,10 +67,9 @@ _readers = {
         }
 
 
-def _cache_path(filepath):
-    cache_path = './.cache/{}.pickle'
+def _cache_path(self, filepath):
     *_, fname = filepath.split('/')
-    return cache_path.format(fname)
+    return self.cache_path.format(fname)
 
 
 def _trim_data(df):
@@ -85,42 +85,69 @@ def _identify_road(df):
     return offsets, non_road_pixels
 
 
-class PavementIRData:
+class PavementIRDataRaw:
+    cache_path = './.cache/{}_raw.pickle'
+
     def __init__(self, title, filepath, reader, pixel_width, cache=True):
-        self.pixel_width = pixel_width
         self.title = title
         self.filepath = filepath
-
-        ### Load the data and perform initial trimming
-        self.df_raw = _readers[reader](filepath)
-        self.df = _trim_data(self.df_raw)
-        self.offsets, self.non_road_pixels = _identify_road(self.df)
-
-        ### Perform gradient detection
-        temperatures = self.temperature_data()
-        self.high_temperature_gradients = detect_high_gradient_pixels(temperatures, self.offsets, cfg.gradient_tolerance)
-        self.high_gradients = calculate_tolerance_vs_percentage_high_gradient(temperatures, self.nroad_pixels, self.offsets, cfg.tolerances)
+        self.reader = reader
+        self.pixel_width = pixel_width
+        self.df = _readers[reader](filepath)
         if cache:
             self.cache()
 
     @classmethod
     def from_cache(cls, title, filepath, reader, pixel_width):
         try:
-            with open(_cache_path(filepath), 'rb') as f:
+            with open(_cache_path(cls, filepath), 'rb') as f:
                 return pickle.load(f)
         except FileNotFoundError:
             return cls(title, filepath, reader, pixel_width)
 
     def cache(self):
-        with open(_cache_path(self.filepath), 'wb') as f:
+        with open(_cache_path(self, self.filepath), 'wb') as f:
             pickle.dump(self, f)
 
-    def temperature_data(self, raw=False):
-        if raw:
-            df_temperature, _ = split_temperature_data(self.df_raw)
-        else:
-            df_temperature, _ = split_temperature_data(self.df)
+    @property
+    def temperatures(self):
+        df_temperature, _ = split_temperature_data(self.df)
         return df_temperature
+
+    def resize(self, start, end):
+        self.df = self.df[start:end]
+
+    @property
+    def pixel_height(self):
+        t = self.df.distance.diff().describe()
+        pixel_height = t['50%']
+        return pixel_height
+
+
+class PavementIRData(PavementIRDataRaw):
+    cache_path = './.cache/{}.pickle'
+
+    def __init__(self, data, cache=True):
+        self.title = data.title
+        self.filepath = data.filepath
+        self.reader = data.reader
+        self.pixel_width = data.pixel_width
+
+        ### Load the data and perform initial trimming
+        self.df = _trim_data(data.df)
+        self.offsets, self.non_road_pixels = _identify_road(self.df)
+
+        ### Perform gradient detection
+        self.high_temperature_gradients = detect_high_gradient_pixels(self.temperatures, self.offsets, cfg.gradient_tolerance)
+        self.high_gradients = calculate_tolerance_vs_percentage_high_gradient(self.temperatures, self.nroad_pixels, self.offsets, cfg.tolerances)
+        if cache:
+            self.cache()
+
+    def resize(self, start, end):
+        self.df = self.df[start:end]
+        self.offsets = self.offsets[start:end]
+        self.non_road_pixels = self.non_road_pixels[start:end]
+        self.high_temperature_gradients = self.high_temperature_gradients[start:end]
 
     @property
     def nroad_pixels(self):
@@ -132,10 +159,12 @@ class PavementIRData:
 
     @property
     def normal_road_pixels(self):
-        return (~ self.high_temperature_gradients) & self.road_pixels # Pixels identified as road without high temperature gradients
+        """ Pixels identified as road without high temperature gradients. """
+        return (~ self.high_temperature_gradients) & self.road_pixels
 
 
 if __name__ == '__main__':
     from config import data_files
     for data in data_files:
-        ir_data = PavementIRData(*data)
+        ir_data_raw = PavementIRDataRaw(*data)
+        ir_data = PavementIRData(ir_data_raw)
