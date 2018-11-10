@@ -70,6 +70,3 @@ def _estimate_road_edge_left(line, threshold):
         else:
             break
     return count
-
-
-
