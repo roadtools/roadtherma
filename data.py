@@ -128,6 +128,7 @@ class PavementIRData(PavementIRDataRaw):
     cache_path = './.cache/{}.pickle'
 
     def __init__(self, data, cache=True):
+        ### Copy attributes from PavementIRDataRaw instance
         self.title = data.title
         self.filepath = data.filepath
         self.reader = data.reader
@@ -138,7 +139,7 @@ class PavementIRData(PavementIRDataRaw):
         self.offsets, self.non_road_pixels = _identify_road(self.df)
 
         ### Perform gradient detection
-        self.high_temperature_gradients = detect_high_gradient_pixels(self.temperatures, self.offsets, cfg.gradient_tolerance)
+        self.gradient_map, self.clusters = detect_high_gradient_pixels(self.temperatures.values, self.offsets, cfg.gradient_tolerance)
         self.high_gradients = calculate_tolerance_vs_percentage_high_gradient(self.temperatures, self.nroad_pixels, self.offsets, cfg.tolerances)
         if cache:
             self.cache()
@@ -147,7 +148,7 @@ class PavementIRData(PavementIRDataRaw):
         self.df = self.df[start:end]
         self.offsets = self.offsets[start:end]
         self.non_road_pixels = self.non_road_pixels[start:end]
-        self.high_temperature_gradients = self.high_temperature_gradients[start:end]
+        self.gradient_map = self.gradient_map[start:end]
 
     @property
     def nroad_pixels(self):
@@ -160,7 +161,7 @@ class PavementIRData(PavementIRDataRaw):
     @property
     def normal_road_pixels(self):
         """ Pixels identified as road without high temperature gradients. """
-        return (~ self.high_temperature_gradients) & self.road_pixels
+        return (~ self.gradient_map) & self.road_pixels
 
 
 if __name__ == '__main__':
