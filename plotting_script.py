@@ -8,6 +8,7 @@ from data import PavementIRData, PavementIRDataRaw
 from utils import calculate_velocity
 import config as cfg
 
+
 def save_figures(figures):
     for figure_name, figure in figures.items():
         plt.figure(num=figure.number)
@@ -50,12 +51,14 @@ def temperature_heatmap(ax, data, aspect='auto', cmap='RdYlGn_r', cbar_kws=None,
     mat = ax.imshow(data.temperatures.values, aspect=aspect, cmap=cmap)
     plt.colorbar(mat, ax=ax, **cbar_kws)
 
+
 def create_map_of_analysis_results(data):
     df_temperature = data.temperatures.copy()
     df_temperature.values[data.non_road_pixels] = 1
     df_temperature.values[data.normal_road_pixels] = 2
-    df_temperature.values[data.high_temperature_gradients] = 3
+    df_temperature.values[data.gradient_map] = 3
     return df_temperature.values
+
 
 def plot_heatmaps(title, data, data_raw):
     fig_heatmaps, (ax1, ax2, ax3) = plt.subplots(ncols=3)
@@ -75,6 +78,7 @@ def plot_heatmaps(title, data, data_raw):
     plt.figure(num=fig_heatmaps.number)
     categorical_heatmap(ax3, data)
     return fig_heatmaps
+
 
 def distance_formatter(x, pos, width):
     return '{:.1f}'.format(x*width)
@@ -110,6 +114,7 @@ def plot_statistics(title, data):
     distplot_data = data.temperatures.values[~data.non_road_pixels]
     sns.distplot(distplot_data, color="m", ax=ax2, norm_hist=False)
     return fig_stats
+
 
 if __name__ == '__main__':
     for n, (title, filepath, reader, pixel_width) in enumerate(cfg.data_files):

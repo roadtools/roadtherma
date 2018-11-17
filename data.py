@@ -139,7 +139,8 @@ class PavementIRData(PavementIRDataRaw):
         self.offsets, self.non_road_pixels = _identify_road(self.df)
 
         ### Perform gradient detection
-        self.gradient_map, self.clusters = detect_high_gradient_pixels(self.temperatures.values, self.offsets, cfg.gradient_tolerance)
+        self.gradient_map, self.clusters = detect_high_gradient_pixels(
+                self.temperatures.values, self.offsets, cfg.gradient_tolerance, diagonal_adjacency=True)
         self.high_gradients = calculate_tolerance_vs_percentage_high_gradient(self.temperatures, self.nroad_pixels, self.offsets, cfg.tolerances)
         if cache:
             self.cache()

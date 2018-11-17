@@ -3,7 +3,7 @@ import numpy as np
 
 from gradient_detection import _detect_longitudinal_gradients, _detect_transversal_gradients, detect_high_gradient_pixels
 
-class TestGradientDetection(unittest.TestCase):
+class TestGradientDetectionSimpleAdjacency(unittest.TestCase):
     tolerance = 9
 
     def test_longitudinal_detection(self):
@@ -62,6 +62,213 @@ class TestGradientDetection(unittest.TestCase):
                     [0, 0, 0],
                     ])
                 )
+
+
+class TestGradientDetectionDiagonalAdjacency(unittest.TestCase):
+    tolerance = 0.9
+    offsets = [[0, 3], [0, 3], [0, 3]]
+
+    def test_corner_right_diagonal_detection(self):
+        t = np.array([
+                [10, 0, 0],
+                [0,  0, 0],
+                [0,  0, 0]
+                ])
+        gradient_map, _ = detect_high_gradient_pixels(t, self.offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 0],
+                    [1, 1, 0],
+                    [0, 0, 0]
+                    ])
+                )
+
+
+    def test_corner_left_diagonal_detection(self):
+        t = np.array([
+                [0, 0,10],
+                [0, 0, 0],
+                [0, 0, 0]
+                ])
+        gradient_map, _ = detect_high_gradient_pixels(t, self.offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [0, 1, 1],
+                    [0, 1, 1],
+                    [0, 0, 0]
+                    ])
+                )
+
+
+    def test_middle_diagonal_detection(self):
+        t = np.array([
+                [0,  0, 0],
+                [0, 10, 0],
+                [0,  0, 0]
+                ])
+        gradient_map, _ = detect_high_gradient_pixels(t, self.offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 1],
+                    [1, 1, 1],
+                    [1, 1, 1]
+                    ])
+                )
+
+    def test_uneven_roadwidth_large_width_differences(self):
+        t = np.array([
+                [0,  0, 0,  0, 0],
+                [0, 10, 0, 10, 0],
+                [0,  0, 0,  0, 0]
+                ])
+
+        offsets = [[0, 5], [0, 5], [0, 2]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 1],
+                    [1, 1, 0, 0, 0]
+                    ])
+                )
+
+
+    def test_uneven_road_diagonal_case1(self):
+        # left-diagonal, start_next < start
+        t = np.array([
+                [0, 2, 3],
+                [4, 5, 6],
+                ])
+        offsets = [[1, 3], [0, 3]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [0, 1, 1],
+                    [1, 1, 1],
+                    ])
+                )
+
+    def test_uneven_road_diagonal_case2(self):
+        # left-diagonal, start_next < start
+        t = np.array([
+                [1, 2, 3],
+                [0, 5, 6],
+                ])
+        offsets = [[0, 3], [1, 3]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 1],
+                    [0, 1, 1],
+                    ])
+                )
+
+    def test_uneven_road_diagonal_case3(self):
+        # left-diagonal, start_next == start
+        t = np.array([
+                [0, 2, 3],
+                [0, 5, 6],
+                ])
+        offsets = [[1, 3], [1, 3]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [0, 1, 1],
+                    [0, 1, 1],
+                    ])
+                )
+
+    def test_uneven_road_diagonal_case4(self):
+        # left-diagonal, end_next < end
+        t = np.array([
+                [1, 2, 3],
+                [4, 5, 0],
+                ])
+        offsets = [[0, 3], [0, 2]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    ])
+                )
+
+    def test_uneven_road_diagonal_case5(self):
+        # left-diagonal, end < end_next
+        t = np.array([
+                [1, 2, 3],
+                [4, 5, 0],
+                ])
+        offsets = [[0, 2], [0, 3]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 0],
+                    [1, 1, 1],
+                    ])
+                )
+
+    def test_uneven_road_diagonal_case6(self):
+        # left-diagonal, end < end_next
+        t = np.array([
+                [1, 2, 0],
+                [4, 5, 0],
+                ])
+        offsets = [[0, 2], [0, 2]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 0],
+                    [1, 1, 0],
+                    ])
+                )
+
+
+    def test_uneven_road_length_diagonal_corner1(self):
+        t = np.array([
+                [0,  0, 0],
+                [0, 10, 0],
+                [0,  0, 0]
+                ])
+        offsets = [[1, 3], [0, 3], [0, 2]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [0, 1, 1],
+                    [1, 1, 1],
+                    [1, 1, 0]
+                    ])
+                )
+
+
+    def test_uneven_road_length_diagonal_corner2(self):
+        t = np.array([
+                [0,  0, 0],
+                [0, 10, 0],
+                [0,  0, 0]
+                ])
+        offsets = [[0, 2], [0, 3], [1, 3]]
+        gradient_map, _ = detect_high_gradient_pixels(t, offsets, self.tolerance)
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [1, 1, 0],
+                    [1, 1, 1],
+                    [0, 1, 1]
+                    ])
+                )
+
 
 class TestClusterExtraction(unittest.TestCase):
     tolerance = 0.9

@@ -13,7 +13,7 @@ def calculate_tolerance_vs_percentage_high_gradient(df_temperature, nroad_pixels
     return percentage_high_gradients
 
 
-def detect_high_gradient_pixels(temperatures, offsets, tolerance):
+def detect_high_gradient_pixels(temperatures, offsets, tolerance, diagonal_adjacency=True):
     """
     Return a boolean array the same size as `df_temperature` indexing all pixels
     having higher gradients than what is supplied in `config.gradient_tolerance`.
@@ -31,6 +31,10 @@ def detect_high_gradient_pixels(temperatures, offsets, tolerance):
         # Locate the temperature gradients in the transversal direction
         tranversal_edges = _detect_transversal_gradients(idx, offsets, temperatures, gradient_map, tolerance)
         edges.append(tranversal_edges)
+
+        if diagonal_adjacency:
+            _detect_diagonal_gradients_right(idx, offsets, temperatures, gradient_map, tolerance)
+            _detect_diagonal_gradients_left(idx, offsets, temperatures, gradient_map, tolerance)
 
     tranversal_edges = _detect_transversal_gradients(idx + 1, offsets, temperatures, gradient_map, tolerance)
     edges.append(tranversal_edges)
@@ -68,7 +72,91 @@ def _calc_edges(rowidx1, colidx1, rowidx2, colidx2):
     return edges
 
 
-def _detect_longitudinal_gradients(idx, offsets, temperatures, temperatures_gradient, tolerance):
+def _detect_diagonal_gradients_right(idx, offsets, temperatures, gradient_map, tolerance):
+    start, end = offsets[idx]
+    next_start, next_end = offsets[idx + 1]
+
+    if  next_start < start:
+        new_start = start
+        new_next_start = start + 1
+    elif start < next_start:
+        new_start = next_start - 1
+        new_next_start = next_start
+    elif start == next_start:
+        new_start = start
+        new_next_start = next_start + 1
+
+    if next_end < end:
+        new_end = next_end - 1
+        new_next_end = next_end
+    elif end < next_end:
+        new_end = end
+        new_next_end = end + 1
+    elif end == next_end:
+        new_end = end - 1
+        new_next_end = next_end
+
+    next_start = new_next_start
+    next_end = new_next_end
+    start = new_start
+    end = new_end
+
+
+    temperature_slice = temperatures[idx, start:end]
+    temperature_slice_next = temperatures[idx + 1, next_start:next_end]
+
+    (indices, ) = np.where(np.abs(temperature_slice - temperature_slice_next) > tolerance)
+    gradient_map[idx, start:end][indices] = 1
+    gradient_map[idx + 1, next_start:next_end][indices] = 1
+
+    edges = _calc_edges(idx, indices, idx + 1, indices + 1)
+    return edges
+
+
+def _detect_diagonal_gradients_left(idx, offsets, temperatures, gradient_map, tolerance):
+    start, end = offsets[idx]
+    next_start, next_end = offsets[idx + 1]
+
+
+    if  next_start < start:
+        new_start = start
+        new_next_start = start - 1
+    elif start < next_start:
+        new_start = next_start + 1
+        new_next_start = next_start
+    elif start == next_start:
+        new_start = start + 1
+        new_next_start = next_start
+
+
+    if next_end < end:
+        new_end = next_end + 1
+        new_next_end = next_end
+    elif end < next_end:
+        new_end = end
+        new_next_end = end - 1
+    elif end == next_end:
+        new_end = end
+        new_next_end = end - 1
+
+    next_start = new_next_start
+    next_end = new_next_end
+    start = new_start
+    end = new_end
+
+
+    temperature_slice = temperatures[idx, start:end]
+    temperature_slice_next = temperatures[idx + 1, next_start:next_end]
+
+    (indices, ) = np.where(np.abs(temperature_slice - temperature_slice_next) > tolerance)
+    gradient_map[idx, start:end][indices] = 1
+    gradient_map[idx + 1, next_start:next_end][indices] = 1
+
+    edges = _calc_edges(idx, indices + 1, idx + 1, indices)
+    return edges
+
+
+def _detect_longitudinal_gradients(idx, offsets, temperatures, gradient_map, tolerance):
     start, end = offsets[idx]
     next_start, next_end = offsets[idx + 1]
     start = max(start, next_start)
@@ -79,19 +167,19 @@ def _detect_longitudinal_gradients(idx, offsets, temperatures, temperatures_grad
 
     (indices, ) = np.where(np.abs(temperature_slice - temperature_slice_next) > tolerance)
     indices += start
-    temperatures_gradient[idx, indices] = 1
-    temperatures_gradient[idx + 1, indices] = 1
+    gradient_map[idx, indices] = 1
+    gradient_map[idx + 1, indices] = 1
 
     edges = _calc_edges(idx, indices, idx + 1, indices)
     return edges
 
 
-def _detect_transversal_gradients(idx, offsets, temperatures, temperatures_gradient, tolerance):
+def _detect_transversal_gradients(idx, offsets, temperatures, gradient_map, tolerance):
     start, end = offsets[idx]
     temperature_slice = temperatures[idx, start:end]
     (indices, ) = np.where(np.abs(np.diff(temperature_slice)) > tolerance)
     indices += start
-    temperatures_gradient[idx, indices] = 1
-    temperatures_gradient[idx, indices + 1] = 1
+    gradient_map[idx, indices] = 1
+    gradient_map[idx, indices + 1] = 1
     edges = _calc_edges(idx, indices, idx, indices + 1)
     return edges
