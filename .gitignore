@@ -1,7 +1,3 @@
 __pycache__
-data_files.py
+PaveAnalyser.egg-info
 vim*
-*.png
-data/
-notes
-.cache

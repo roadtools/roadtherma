@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 
-from gradient_detection import detect_high_gradient_pixels
+from .gradient_detection import detect_high_gradient_pixels
 
 def split_temperature_data(df):
     """

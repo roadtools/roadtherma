@@ -9,6 +9,16 @@ features:
 
 *note that this is code is in a very early stage of development*
 
+### Installation
+On unix-based systems open a terminal and run the following
+
+```
+$ git clone https://github.com/lgandersen/pave-analyser.git
+$ pip3 install pave-analyser
+```
+
+and thats it! You sould now be able to use the CLI tool described below.
+
 ### CLI Tool
 The file `pave_analyser.py` is the executable CLI. It can be terminal or
 within IPython or a similar environment. Below is shown how to print the
@@ -17,22 +27,22 @@ help screen containing usage instructions.
 
 From a terminal:
 ```
-$ python3.4 pave_analyser.py --help
+$ pave-analyser --help
 ```
 
 From IPython:
 ```
-In [21]: %run pave_analyser.py --help
+In [21]: !pave-analyser --help
 ```
 
 This should produce the following text:
 
 ```
-Usage: pave_analyser.py [OPTIONS]
+Usage: pave-analyser [OPTIONS]
 
   Command line tool for analysing Pavement IR data. It assumes that a file
-  named 'data_files.py' is located in the same directory as this script
-  containing a list of tuples named 'data_files' specified as follows:
+  named 'data_files.py' is located where this script is executed containing
+  a list of tuples named 'data_files' specified as follows:
 
       data_files = [
 
@@ -53,9 +63,10 @@ Usage: pave_analyser.py [OPTIONS]
 Options:
   --cache / --no-cache            Wheter or not to use caching. If this is
                                   enabled and no caching files is found in
-                                  "./.cache/" the data will be processed from
-                                  scratch and cached afterwards.  [default:
-                                  True]
+                                  "./.cache" the data will be processed from
+                                  scratch and cached afterwards. The directory
+                                  "./cache" must exist for caching to work.
+                                  [default: True]
   --savefig / --no-savefig        Wheter or not to save the generated plots as
                                   png-files.  [default: False]
   --trim_threshold FLOAT          Temperature threshold for the data trimming

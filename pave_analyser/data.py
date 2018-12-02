@@ -1,9 +1,9 @@
 import pickle
 import pandas as pd
 
-from utils import split_temperature_data, merge_temperature_data
-from road_identification import trim_temperature, estimate_road_length
-from gradient_detection import detect_high_gradient_pixels
+from .utils import split_temperature_data, merge_temperature_data
+from .road_identification import trim_temperature, estimate_road_length
+from .gradient_detection import detect_high_gradient_pixels
 
 
 def _read_TF(filename):
@@ -161,10 +161,3 @@ class PavementIRData(PavementIRDataRaw):
     def normal_road_pixels(self):
         """ Pixels identified as road without high temperature gradients. """
         return (~ self.gradient_map) & self.road_pixels
-
-
-if __name__ == '__main__':
-    from config import data_files
-    for data in data_files:
-        ir_data_raw = PavementIRDataRaw(*data)
-        ir_data = PavementIRData(ir_data_raw)

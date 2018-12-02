@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-from utils import calculate_tolerance_vs_percentage_high_gradient
+from .utils import calculate_tolerance_vs_percentage_high_gradient
 
 def categorical_heatmap(ax, data, aspect='auto', cbar_kws=None):
     cat_array = create_map_of_analysis_results(data)
