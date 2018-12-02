@@ -3,8 +3,7 @@ import pandas as pd
 
 from utils import split_temperature_data, merge_temperature_data
 from road_identification import trim_temperature, estimate_road_length
-from gradient_detection import detect_high_gradient_pixels, calculate_tolerance_vs_percentage_high_gradient
-import config as cfg
+from gradient_detection import detect_high_gradient_pixels
 
 
 def _read_TF(filename):
@@ -72,16 +71,16 @@ def _cache_path(self, filepath):
     return self.cache_path.format(fname)
 
 
-def _trim_data(df):
+def _trim_data(df, trim_threshold, percentage_above):
     df = df.copy(deep=True)
     df_temperature, df_rest = split_temperature_data(df)
-    df_temperature = trim_temperature(df_temperature)
+    df_temperature = trim_temperature(df_temperature, trim_threshold, percentage_above)
     return merge_temperature_data(df_temperature, df_rest)
 
 
-def _identify_road(df):
+def _identify_road(df, roadlength_threshold):
     df_temperature, df_rest = split_temperature_data(df)
-    offsets, non_road_pixels = estimate_road_length(df_temperature, cfg.roadlength_threshold)
+    offsets, non_road_pixels = estimate_road_length(df_temperature, roadlength_threshold)
     return offsets, non_road_pixels
 
 
@@ -98,12 +97,12 @@ class PavementIRDataRaw:
             self.cache()
 
     @classmethod
-    def from_cache(cls, title, filepath, reader, pixel_width):
+    def from_cache(cls, title, filepath):
         try:
             with open(_cache_path(cls, filepath), 'rb') as f:
                 return pickle.load(f)
         except FileNotFoundError:
-            return cls(title, filepath, reader, pixel_width)
+            return None
 
     def cache(self):
         with open(_cache_path(self, self.filepath), 'wb') as f:
@@ -127,7 +126,7 @@ class PavementIRDataRaw:
 class PavementIRData(PavementIRDataRaw):
     cache_path = './.cache/{}.pickle'
 
-    def __init__(self, data, cache=True):
+    def __init__(self, data, roadlength_threshold, gradient_tolerance, trim_threshold, percentage_above, cache=True):
         ### Copy attributes from PavementIRDataRaw instance
         self.title = data.title
         self.filepath = data.filepath
@@ -135,13 +134,12 @@ class PavementIRData(PavementIRDataRaw):
         self.pixel_width = data.pixel_width
 
         ### Load the data and perform initial trimming
-        self.df = _trim_data(data.df)
-        self.offsets, self.non_road_pixels = _identify_road(self.df)
+        self.df = _trim_data(data.df, trim_threshold, percentage_above)
+        self.offsets, self.non_road_pixels = _identify_road(self.df, roadlength_threshold)
 
         ### Perform gradient detection
         self.gradient_map, self.clusters = detect_high_gradient_pixels(
-                self.temperatures.values, self.offsets, cfg.gradient_tolerance, diagonal_adjacency=True)
-        self.high_gradients = calculate_tolerance_vs_percentage_high_gradient(self.temperatures, self.nroad_pixels, self.offsets, cfg.tolerances)
+                self.temperatures.values, self.offsets, gradient_tolerance, diagonal_adjacency=True)
         if cache:
             self.cache()
 

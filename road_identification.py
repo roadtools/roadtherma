@@ -1,14 +1,12 @@
 import numpy as np
 
-import config as cfg
-
-def trim_temperature(df):
+def trim_temperature(df, trim_threshold, percentage_above):
     """
     Trim the dataframe such that all outer rows and columns that only contains
     `percentage_above` temperature values below `threshold` will be will be discarded.
     """
-    df = _trim_temperature_columns(df, cfg.trim_threshold, cfg.percentage_above)
-    df = _trim_temperature_columns(df.T, cfg.trim_threshold, cfg.percentage_above).T
+    df = _trim_temperature_columns(df, trim_threshold, percentage_above)
+    df = _trim_temperature_columns(df.T, trim_threshold, percentage_above).T
     return df
 
 
