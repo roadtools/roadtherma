@@ -46,11 +46,11 @@ def temperature_heatmap(ax, data, aspect='auto', cmap='RdYlGn_r', cbar_kws=None,
 
 
 def create_map_of_analysis_results(data):
-    df_temperature = data.temperatures.copy()
-    df_temperature.values[data.non_road_pixels] = 1
-    df_temperature.values[data.normal_road_pixels] = 2
-    df_temperature.values[data.gradient_map] = 3
-    return df_temperature.values
+    map_ = data.temperatures.copy()
+    map_.values[~ data.road_pixels] = 1
+    map_.values[data.road_pixels] = 2
+    map_.values[data.gradient_map] = 3
+    return map_.values
 
 
 def plot_heatmaps(title, data, data_raw):
@@ -108,7 +108,7 @@ def plot_statistics(title, data, tolerances):
     ### Plot showing histogram of road temperature
     ax2.set_title('Road temperature distribution')
     ax2.set_xlabel('Temperature [C]')
-    distplot_data = data.temperatures.values[~data.non_road_pixels]
+    distplot_data = data.temperatures.values[data.road_pixels]
     sns.distplot(distplot_data, color="m", ax=ax2, norm_hist=False)
     return fig_stats
 

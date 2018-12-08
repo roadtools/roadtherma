@@ -1,5 +1,3 @@
-import numpy as np
-
 def trim_temperature(df, trim_threshold, percentage_above):
     """
     Trim the dataframe such that all outer rows and columns that only contains
@@ -31,21 +29,18 @@ def _trim(df, column, threshold_temp, percentage_above):
         return True
 
 
-def estimate_road_length(df, threshold):
+def estimate_road_length(df, threshold, adjust_npixel):
     """
     Estimate the road length of each transversal section (row) of the road.
-    Return a list of offsets for each row as well as a boolean array of indices
-    indicating all non-road pixels.
+    Return a list of offsets for each row (transversal line).
     """
     values = df.values
     offsets = []
-    non_road_pixels = np.ones(values.shape, dtype='bool')
     for distance_idx in range(values.shape[0]):
-        offset_start = _estimate_road_edge_right(values[distance_idx, :], threshold)
-        offset_end = _estimate_road_edge_left(values[distance_idx, :], threshold)
-        non_road_pixels[distance_idx, offset_start:offset_end] = 0
-        offsets.append((offset_start, offset_end))
-    return offsets, non_road_pixels
+        start = _estimate_road_edge_right(values[distance_idx, :], threshold)
+        end = _estimate_road_edge_left(values[distance_idx, :], threshold)
+        offsets.append((start + adjust_npixel, end - adjust_npixel))
+    return offsets
 
 
 def _estimate_road_edge_right(line, threshold):

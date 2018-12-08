@@ -1,5 +1,6 @@
 import pickle
 import pandas as pd
+import numpy as np
 
 from .utils import split_temperature_data, merge_temperature_data
 from .road_identification import trim_temperature, estimate_road_length
@@ -71,19 +72,6 @@ def _cache_path(self, filepath):
     return self.cache_path.format(fname)
 
 
-def _trim_data(df, trim_threshold, percentage_above):
-    df = df.copy(deep=True)
-    df_temperature, df_rest = split_temperature_data(df)
-    df_temperature = trim_temperature(df_temperature, trim_threshold, percentage_above)
-    return merge_temperature_data(df_temperature, df_rest)
-
-
-def _identify_road(df, roadlength_threshold):
-    df_temperature, df_rest = split_temperature_data(df)
-    offsets, non_road_pixels = estimate_road_length(df_temperature, roadlength_threshold)
-    return offsets, non_road_pixels
-
-
 class PavementIRDataRaw:
     cache_path = './.cache/{}_raw.pickle'
 
@@ -126,7 +114,7 @@ class PavementIRDataRaw:
 class PavementIRData(PavementIRDataRaw):
     cache_path = './.cache/{}.pickle'
 
-    def __init__(self, data, roadlength_threshold, gradient_tolerance, trim_threshold, percentage_above, cache=True):
+    def __init__(self, data, roadwidth_threshold, adjust_npixel, gradient_tolerance, trim_threshold, percentage_above, cache=True):
         ### Copy attributes from PavementIRDataRaw instance
         self.title = data.title
         self.filepath = data.filepath
@@ -134,8 +122,9 @@ class PavementIRData(PavementIRDataRaw):
         self.pixel_width = data.pixel_width
 
         ### Load the data and perform initial trimming
-        self.df = _trim_data(data.df, trim_threshold, percentage_above)
-        self.offsets, self.non_road_pixels = _identify_road(self.df, roadlength_threshold)
+        self.df = self._trim_data(data.df, trim_threshold, percentage_above)
+        self.offsets = self._identify_road(self.df, roadwidth_threshold, adjust_npixel)
+        self.road_pixels = self._create_road_pixel_map(self.offsets, self.df)
 
         ### Perform gradient detection
         self.gradient_map, self.clusters = detect_high_gradient_pixels(
@@ -143,21 +132,30 @@ class PavementIRData(PavementIRDataRaw):
         if cache:
             self.cache()
 
+    def _trim_data(self, df, trim_threshold, percentage_above):
+        df = df.copy(deep=True)
+        df_temperature, df_rest = split_temperature_data(df)
+        df_temperature = trim_temperature(df_temperature, trim_threshold, percentage_above)
+        return merge_temperature_data(df_temperature, df_rest)
+
+    def _identify_road(self, df, roadwidth_threshold, adjust_npixel):
+        df_temperature, df_rest = split_temperature_data(df)
+        offsets = estimate_road_length(df_temperature, roadwidth_threshold, adjust_npixel)
+        return offsets
+
+    def _create_road_pixel_map(self, offsets, df):
+        df_temp, _ = split_temperature_data(df)
+        road_pixels = np.zeros(df_temp.values.shape, dtype='bool')
+        for idx, (start, end) in enumerate(offsets):
+            road_pixels[idx, start:end] = 1
+        return road_pixels
+
     def resize(self, start, end):
         self.df = self.df[start:end]
         self.offsets = self.offsets[start:end]
-        self.non_road_pixels = self.non_road_pixels[start:end]
+        self.road_pixels = self.road_pixels[start:end]
         self.gradient_map = self.gradient_map[start:end]
 
     @property
     def nroad_pixels(self):
         return self.road_pixels.sum()
-
-    @property
-    def road_pixels(self):
-        return ~self.non_road_pixels
-
-    @property
-    def normal_road_pixels(self):
-        """ Pixels identified as road without high temperature gradients. """
-        return (~ self.gradient_map) & self.road_pixels

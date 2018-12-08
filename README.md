@@ -41,8 +41,8 @@ This should produce the following text:
 Usage: pave-analyser [OPTIONS]
 
   Command line tool for analysing Pavement IR data. It assumes that a file
-  named 'data_files.py' is located where this script is executed containing
-  a list of tuples named 'data_files' specified as follows:
+  './data_files.py' (located where this script is executed) exists and
+  contains a list of tuples named 'data_files' as follows:
 
       data_files = [
 
@@ -75,8 +75,10 @@ Options:
                                   trim_threshold in order for that outer
                                   longitudinal line to be removed.  [default:
                                   0.2]
-  --roadlength_threshold FLOAT    Temperature threshold for the road length
+  --roadwidth_threshold FLOAT     Temperature threshold for the road width
                                   estimation step.  [default: 80.0]
+  --adjust_npixel INTEGER         Additional number of pixels to cut off edges
+                                  during road width estimation.  [default: 2]
   --gradient_tolerance FLOAT      Tolerance on the temperature difference
                                   during temperature gradient detection.
                                   [default: 10.0]
@@ -87,4 +89,4 @@ Options:
                                   is comprised of high gradients vs gradient
                                   tolerance.  [default: 5, 20, 1]
   --help                          Show this message and exit.
-```
+  ```
