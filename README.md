@@ -89,4 +89,4 @@ Options:
                                   is comprised of high gradients vs gradient
                                   tolerance.  [default: 5, 20, 1]
   --help                          Show this message and exit.
-  ```
+ ```
