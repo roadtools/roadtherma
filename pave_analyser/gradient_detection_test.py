@@ -280,11 +280,15 @@ class TestClusterExtraction(unittest.TestCase):
                 [1, 0, 0],
                 [0, 0, 0],
                 ])
-        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance)
-        largest_cluster = set(clusters[0])
+        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance, diagonal_adjacency=False)
+        _, clusters_diag = detect_high_gradient_pixels(t, self.offsets, self.tolerance, diagonal_adjacency=True)
         self.assertEqual(
-                largest_cluster,
+                set(clusters[0]),
                 {(0, 0), (1, 0), (1,1), (2, 0)}
+                )
+        self.assertEqual(
+                set(clusters_diag[0]),
+                {(0, 0), (0, 1), (1, 0), (1,1), (2, 0), (2, 1)}
                 )
 
 
@@ -294,11 +298,15 @@ class TestClusterExtraction(unittest.TestCase):
                 [0, 0, 0],
                 [0, 0, 1],
                 ])
-        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance)
-        largest_cluster = set(clusters[0])
+        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance, diagonal_adjacency=False)
+        _, clusters_diag = detect_high_gradient_pixels(t, self.offsets, self.tolerance, diagonal_adjacency=True)
         self.assertEqual(
-                largest_cluster,
+                set(clusters[0]),
                 {(1, 2), (2, 1), (2, 2)}
+                )
+        self.assertEqual(
+                set(clusters_diag[0]),
+                {(1,1), (1, 2), (2, 1), (2, 2)}
                 )
 
 
@@ -308,21 +316,27 @@ class TestClusterExtraction(unittest.TestCase):
                 [0, 1, 0],
                 [0, 0, 0],
                 ])
-        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance)
-        largest_cluster = set(clusters[0])
+        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance, diagonal_adjacency=False)
+        _, clusters_diag = detect_high_gradient_pixels(t, self.offsets, self.tolerance, diagonal_adjacency=True)
         self.assertEqual(
-                largest_cluster,
+                set(clusters[0]),
                 {(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)}
+                )
+        self.assertEqual(
+                set(clusters_diag[0]),
+                {(0, 0), (0, 1), (0, 2),
+                 (1, 0), (1, 1), (1, 2),
+                 (2, 0), (2, 1), (2, 2)}
                 )
 
 
-    def test_clustering_two_clusters(self):
+    def test_clustering_two_clusters_no_diagonal(self):
         t = np.array([
                 [2, 1, 0],
                 [0, 0, 0],
                 [0, 0, 1],
                 ])
-        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance)
+        _, clusters = detect_high_gradient_pixels(t, self.offsets, self.tolerance, diagonal_adjacency=False)
         largest_cluster = set(clusters[0])
         second_largest_cluster = set(clusters[1])
         self.assertEqual(
@@ -333,6 +347,59 @@ class TestClusterExtraction(unittest.TestCase):
                 second_largest_cluster,
                 {(1, 2), (2, 1), (2, 2)}
                 )
+
+
+    def test_clustering_two_clusters_with_diagonal(self):
+        t = np.array([
+                [2, 1, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 1],
+                ])
+        offsets = [[0, 3], [0, 3], [0, 3], [0, 3]]
+        _, clusters = detect_high_gradient_pixels(t, offsets, self.tolerance, diagonal_adjacency=True)
+        largest_cluster = set(clusters[0])
+        second_largest_cluster = set(clusters[1])
+        self.assertEqual(
+                largest_cluster,
+                {(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)}
+                )
+        self.assertEqual(
+                second_largest_cluster,
+                {(2, 1), (2, 2), (3, 1), (3, 2)}
+                )
+
+
+    def test_large_cluster(self):
+        from road_identification import estimate_road_length
+        threshold = 1.0
+        adjust_npixel = 0
+        tolerance = 0.1
+        pixels = np.array([
+            [0, 9, 8, 7, 9],
+            [9, 8, 7, 8, 0]
+            ])
+        offsets, road_pixels = estimate_road_length(pixels, threshold, adjust_npixel)
+        gradient_map, clusters = detect_high_gradient_pixels(pixels, offsets, tolerance, diagonal_adjacency=True)
+        self.assertEqual(offsets, [(1, 5), (0, 4)])
+        np.testing.assert_array_equal(
+                road_pixels,
+                np.array([
+                    [0, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 0]
+                    ])
+                )
+        np.testing.assert_array_equal(
+                gradient_map,
+                np.array([
+                    [0, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 0]
+                    ])
+                )
+        self.assertEqual(set(clusters[0]), {
+            (0, 1), (0, 2), (0, 3), (0, 4),
+            (1, 0), (1, 1), (1, 2), (1, 3)}
+            )
 
 
 if __name__ == '__main__':

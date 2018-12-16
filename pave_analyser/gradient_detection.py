@@ -14,22 +14,20 @@ def detect_high_gradient_pixels(temperatures, offsets, tolerance, diagonal_adjac
     """
     gradient_map = np.zeros(temperatures.shape, dtype='bool')
     edges = []
+    add_edges = lambda x:edges.append(x)
 
     for idx in range(len(offsets) - 1):
         # Locate the temperature gradients in the driving direction
-        longitudinal_edges = _detect_longitudinal_gradients(idx, offsets, temperatures, gradient_map, tolerance)
-        edges.append(longitudinal_edges)
+        add_edges(_detect_longitudinal_gradients(idx, offsets, temperatures, gradient_map, tolerance))
 
         # Locate the temperature gradients in the transversal direction
-        tranversal_edges = _detect_transversal_gradients(idx, offsets, temperatures, gradient_map, tolerance)
-        edges.append(tranversal_edges)
+        add_edges(_detect_transversal_gradients(idx, offsets, temperatures, gradient_map, tolerance))
 
         if diagonal_adjacency:
-            _detect_diagonal_gradients_right(idx, offsets, temperatures, gradient_map, tolerance)
-            _detect_diagonal_gradients_left(idx, offsets, temperatures, gradient_map, tolerance)
+            add_edges(_detect_diagonal_gradients_right(idx, offsets, temperatures, gradient_map, tolerance))
+            add_edges(_detect_diagonal_gradients_left(idx, offsets, temperatures, gradient_map, tolerance))
 
-    tranversal_edges = _detect_transversal_gradients(idx + 1, offsets, temperatures, gradient_map, tolerance)
-    edges.append(tranversal_edges)
+    add_edges(_detect_transversal_gradients(idx + 1, offsets, temperatures, gradient_map, tolerance))
 
     gradient_graph = _create_gradient_graph(edges)
     clusters = list(_extract_clusters(gradient_graph))
@@ -98,10 +96,11 @@ def _detect_diagonal_gradients_right(idx, offsets, temperatures, gradient_map, t
     temperature_slice_next = temperatures[idx + 1, next_start:next_end]
 
     (indices, ) = np.where(np.abs(temperature_slice - temperature_slice_next) > tolerance)
+
     gradient_map[idx, start:end][indices] = 1
     gradient_map[idx + 1, next_start:next_end][indices] = 1
 
-    edges = _calc_edges(idx, indices, idx + 1, indices + 1)
+    edges = _calc_edges(idx, indices + start, idx + 1, indices + next_start)
     return edges
 
 
@@ -144,7 +143,7 @@ def _detect_diagonal_gradients_left(idx, offsets, temperatures, gradient_map, to
     gradient_map[idx, start:end][indices] = 1
     gradient_map[idx + 1, next_start:next_end][indices] = 1
 
-    edges = _calc_edges(idx, indices + 1, idx + 1, indices)
+    edges = _calc_edges(idx, indices + start, idx + 1, indices + next_start)
     return edges
 
 
