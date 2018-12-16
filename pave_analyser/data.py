@@ -123,11 +123,10 @@ class PavementIRData(PavementIRDataRaw):
 
         ### Load the data and perform initial trimming
         self.df = self._trim_data(data.df, trim_threshold, percentage_above)
-        self.offsets = self._identify_road(self.df, roadwidth_threshold, adjust_npixel)
-        self.road_pixels = self._create_road_pixel_map(self.offsets, self.df)
+        self.offsets, self.road_pixels = estimate_road_length(self.temperatures.values, roadwidth_threshold, adjust_npixel)
 
         ### Perform gradient detection
-        self.gradient_map, self.clusters = detect_high_gradient_pixels(
+        self.gradient_pixels, self.clusters = detect_high_gradient_pixels(
                 self.temperatures.values, self.offsets, gradient_tolerance, diagonal_adjacency=True)
         if cache:
             self.cache()
@@ -138,23 +137,11 @@ class PavementIRData(PavementIRDataRaw):
         df_temperature = trim_temperature(df_temperature, trim_threshold, percentage_above)
         return merge_temperature_data(df_temperature, df_rest)
 
-    def _identify_road(self, df, roadwidth_threshold, adjust_npixel):
-        df_temperature, df_rest = split_temperature_data(df)
-        offsets = estimate_road_length(df_temperature, roadwidth_threshold, adjust_npixel)
-        return offsets
-
-    def _create_road_pixel_map(self, offsets, df):
-        df_temp, _ = split_temperature_data(df)
-        road_pixels = np.zeros(df_temp.values.shape, dtype='bool')
-        for idx, (start, end) in enumerate(offsets):
-            road_pixels[idx, start:end] = 1
-        return road_pixels
-
     def resize(self, start, end):
         self.df = self.df[start:end]
         self.offsets = self.offsets[start:end]
         self.road_pixels = self.road_pixels[start:end]
-        self.gradient_map = self.gradient_map[start:end]
+        self.gradient_pixels = self.gradient_pixels[start:end]
 
     @property
     def nroad_pixels(self):
