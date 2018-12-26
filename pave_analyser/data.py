@@ -1,6 +1,5 @@
 import pickle
 import pandas as pd
-import numpy as np
 
 from .utils import split_temperature_data, merge_temperature_data
 from .road_identification import trim_temperature, estimate_road_length
@@ -59,10 +58,27 @@ def _read_vogele_taulov(filename):
     return df
 
 
+def _read_vogele_M30(filename):
+    """
+    NOTE removed last line in the file as it only contained 'No data to display'.
+    """
+    import csv
+    columns = VOEGELE_BASE_COLUMNS + ['signal_quality'] + temperatures_voegele
+    df = pd.read_csv(filename, skiprows=3, delimiter=',', names=columns, quoting=csv.QUOTE_NONE, quotechar='"', doublequote=True)
+    for col in df.columns:
+        if col == 'time':
+            df[col] = df[col].apply(lambda x:x.strip('"'))
+        if col in set(temperatures_voegele) | {'distance', 'latitude', 'longitude'}:
+            df[col] = df[col].astype('str').apply(lambda x:x.strip('"')).astype('float')
+    _convert_vogele_timestamps(df, "%d/%m/%Y %H:%M:%S UTC + 02:00") # NOTE only difference between this and _read_vogele_taulov is the UTC-part here (ffs!)
+    return df
+
+
 _readers = {
         'TF':_read_TF,
         'voegele_example':_read_vogele_example,
         'voegele_M119':_read_vogele_M119,
+        'voegele_M30':_read_vogele_M30,
         'voegele_taulov':_read_vogele_taulov
         }
 
