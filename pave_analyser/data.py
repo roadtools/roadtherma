@@ -126,6 +126,12 @@ class PavementIRDataRaw:
         pixel_height = t['50%']
         return pixel_height
 
+    @property
+    def mean_velocity(self):
+        if 'velocity' in self.df.columns:
+            return self.df.velocity.mean()
+        else:
+            return 'N/A'
 
 class PavementIRData(PavementIRDataRaw):
     cache_path = './.cache/{}.pickle'
@@ -142,8 +148,8 @@ class PavementIRData(PavementIRDataRaw):
         self.offsets, self.road_pixels = estimate_road_length(self.temperatures.values, roadwidth_threshold, adjust_npixel)
 
         ### Perform gradient detection
-        self.gradient_pixels, self.clusters = detect_high_gradient_pixels(
-                self.temperatures.values, self.offsets, gradient_tolerance, diagonal_adjacency=True)
+        self.gradient_pixels, self.clusters = detect_high_gradient_pixels(self,
+                self.offsets, gradient_tolerance, diagonal_adjacency=True)
         if cache:
             self.cache()
 

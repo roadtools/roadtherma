@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 
-
-def create_cluster_dataframe(data):
-    clusters = data.clusters
+def create_cluster_dataframe(data, clusters):
     clusters_npixel = np.array([len(cluster) for cluster in clusters])
     clusters = [np.array(cluster) for cluster in clusters]
     df = pd.DataFrame.from_dict({
@@ -21,12 +19,21 @@ def create_cluster_dataframe(data):
     return df
 
 
-def filter_clusters(df, sqm=None, npixels=None):
+def filter_clusters(data, sqm=None, npixels=None):
+    df = data.clusters
     if sqm is not None:
         df = df[df['size_m^2'] >= sqm]
     if npixels is not None:
         df = df[df['size_npixel'] >= npixels]
-    return df.copy()
+    data.clusters = df.copy()
+
+    # rebuild gradient_map based on the (possibly) reduced set of clusters
+    gradient_pixels = np.zeros(data.gradient_pixels.shape, dtype='bool')
+    for idx, cluster in data.clusters.iterrows():
+        coords = cluster.coordinates
+        gradient_pixels[coords[:, 0], coords[:, 1]] = 1
+    data.gradient_pixels = gradient_pixels
+    return data
 
 
 def _mean_cluster_temperature(cluster, temperature_map):
@@ -39,14 +46,14 @@ def _mean_cluster_temperature(cluster, temperature_map):
 
 def _center_gps(row, data):
     idx, _ = row.center_pixel
-    longitude = data.df.longitude[idx]
-    latitude = data.df.latitude[idx]
+    longitude = data.df.longitude.values[idx]
+    latitude = data.df.latitude.values[idx]
     return (longitude, latitude)
 
 
 def _center_chainage(row, data):
     idx, _ = row.center_pixel
-    chainage = data.df.distance[idx]
+    chainage = data.df.distance.values[idx]
     return chainage
 
 
@@ -59,9 +66,9 @@ def _cluster_center(coordinates):
 
 def _start_time(row, time):
     min_idx = min([idx for idx, _ in row.coordinates])
-    return time[min_idx]
+    return time.values[min_idx]
 
 
 def _end_time(row, time):
     max_idx = max([idx for idx, _ in row.coordinates])
-    return time[max_idx]
+    return time.values[max_idx]
