@@ -7,9 +7,7 @@ from matplotlib.ticker import FuncFormatter
 
 from .utils import calculate_tolerance_vs_percentage_high_gradient
 
-def categorical_heatmap(ax, data, aspect='auto', cbar_kws=None):
-    cat_array = create_map_of_analysis_results(data)
-
+def categorical_heatmap(ax, cat_array, data, labels, aspect='auto', cbar_kws=None):
     if cbar_kws is None:
         cbar_kws = dict()
     cmap = plt.get_cmap('magma', np.max(cat_array)-np.min(cat_array)+1)
@@ -18,7 +16,7 @@ def categorical_heatmap(ax, data, aspect='auto', cbar_kws=None):
     mat = ax.imshow(cat_array, aspect=aspect, cmap=cmap,vmin = np.min(cat_array)-.5, vmax = np.max(cat_array)+.5)
     #tell the colorbar to tick at integers
     cbar = plt.colorbar(mat, ax=ax, ticks=np.arange(np.min(cat_array),np.max(cat_array) + 1), **cbar_kws)
-    cbar.set_ticklabels(['Non-road', 'normal road', 'high gradient road'])
+    cbar.set_ticklabels(labels)
 
 
 def aspect_ratio(data):
@@ -28,12 +26,13 @@ def aspect_ratio(data):
 
 def _set_meter_ticks_on_axes(ax, data):
     format_x = partial(_distance_formatter, width=data.pixel_width)
-    format_y = partial(_distance_formatter, width=data.pixel_height)
+    format_y = partial(_distance_formatter, width=data.pixel_height,
+            integer=True, offset=data.df.distance.iloc[0])
     formatter_x = FuncFormatter(format_x)
     formatter_y = FuncFormatter(format_y)
     ax.xaxis.set_major_formatter(formatter_x)
     ax.yaxis.set_major_formatter(formatter_y)
-    ax.set_xlabel('width [m]')
+    ax.set_xlabel('Width [m]')
 
 
 def temperature_heatmap(ax, data, aspect='auto', cmap='RdYlGn_r', cbar_kws=None, **kwargs):
@@ -49,12 +48,14 @@ def create_map_of_analysis_results(data):
     map_ = data.temperatures.copy()
     map_.values[~ data.road_pixels] = 1
     map_.values[data.road_pixels] = 2
-    map_.values[data.gradient_map] = 3
+    map_.values[data.gradient_pixels] = 3
     return map_.values
 
 
 def plot_heatmaps(title, data, data_raw):
     fig_heatmaps, (ax1, ax2, ax3) = plt.subplots(ncols=3)
+    fig_heatmaps.subplots_adjust(wspace=0.6)
+    #fig_heatmaps.tight_layout()
     fig_heatmaps.suptitle(title)
 
     ### Plot the raw data
@@ -69,12 +70,19 @@ def plot_heatmaps(title, data, data_raw):
     ### Plot that shows identified road and high gradient pixels
     ax3.set_title('Estimated high gradients')
     plt.figure(num=fig_heatmaps.number)
-    categorical_heatmap(ax3, data)
+    cat_array = create_map_of_analysis_results(data)
+    labels = ['Non-road', 'normal\nroad', 'high\ngradient\nroad']
+    categorical_heatmap(ax3, cat_array, data, labels)
     return fig_heatmaps
 
 
-def _distance_formatter(x, pos, width):
-    return '{:.1f}'.format(x*width)
+def _distance_formatter(x, pos, width, offset=None, integer=False):
+    if offset is None:
+        offset = 0
+    if integer:
+        return '{}'.format(int(round(x*width + offset)))
+    else:
+        return '{:.1f}'.format(x*width + offset)
 
 
 def plot_heatmaps_section(title, data):
@@ -90,7 +98,9 @@ def plot_heatmaps_section(title, data):
 
     ### Plot that shows identified road and high gradient pixels
     ax2.set_title('Estimated high gradients')
-    categorical_heatmap(ax2, data, aspect=aspect, cbar_kws={'shrink':0.7})
+    cat_array = create_map_of_analysis_results(data)
+    labels = ['Non-road', 'normal\nroad', 'high\ngradient\nroad']
+    categorical_heatmap(ax2, cat_array, data, labels, aspect=aspect, cbar_kws={'shrink':0.7})
     return fig_heatmaps
 
 
@@ -116,4 +126,4 @@ def plot_statistics(title, data, tolerances):
 def save_figures(figures, n):
     for figure_name, figure in figures.items():
         plt.figure(num=figure.number)
-        plt.savefig("{}{}.png".format(figure_name, n), dpi=1200)#, dpi=800)
+        plt.savefig("{}{}.png".format(figure_name, n), dpi=500)

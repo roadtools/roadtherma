@@ -1,10 +1,13 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import click
 
 from .data import PavementIRData, PavementIRDataRaw
 from .utils import calculate_velocity
 from .plotting import plot_statistics, plot_heatmaps, plot_heatmaps_section, save_figures
+
+matplotlib.rcParams.update({'font.size': 6})
 
 @click.command()
 @click.option('--plots/--no-plots', default=True, show_default=True,help='Wheter or not to create plots.')
@@ -40,6 +43,8 @@ def script(plots, cache, savefig, trim_threshold, percentage_above, roadwidth_th
     data_files = namespace['data_files']
 
     for n, (title, filepath, reader, pixel_width) in enumerate(data_files):
+        print('Processing data file #{} - {}'.format(n, title))
+        print('Path: {}'.format(filepath))
         if cache:
             data_raw = PavementIRDataRaw.from_cache(title, filepath)
             data = PavementIRData.from_cache(title, filepath)
@@ -49,12 +54,10 @@ def script(plots, cache, savefig, trim_threshold, percentage_above, roadwidth_th
             data_raw = PavementIRDataRaw(title, filepath, reader, pixel_width)
             data = PavementIRData(data_raw, roadwidth_threshold, adjust_npixel, gradient_tolerance, trim_threshold, percentage_above)
 
-        print('Processing data file #{} - {}'.format(n, title))
         if 'TF' not in title:
             # There is no timestamps in TF-data and thus no derivation of velocity
             calculate_velocity(data_raw.df)
             print('Mean paving velocity {:.1f} m/min'.format(data_raw.df.velocity.mean()))
-
         if plots:
             fig_stats = plot_statistics(title, data, tolerances)
             fig_heatmaps = plot_heatmaps(title, data, data_raw)
@@ -67,6 +70,7 @@ def script(plots, cache, savefig, trim_threshold, percentage_above, roadwidth_th
             plt.show()
             if savefig:
                 save_figures(figures, n)
+    return data, data_raw
 
 
 if __name__ == '__main__':
