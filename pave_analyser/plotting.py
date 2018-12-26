@@ -104,6 +104,19 @@ def plot_heatmaps_section(title, data):
     return fig_heatmaps
 
 
+def plot_single_cluster(data, cluster_no):
+    fig_heatmaps, ax = plt.subplots(ncols=1)
+    cat_array = data.temperatures.copy().values
+    cat_array[~ data.road_pixels] = 1
+    cat_array[data.road_pixels] = 2
+    cat_array[data.gradient_pixels] = 3
+    coords = data.clusters[cluster_no]
+    for row, col in coords:
+        cat_array[row, col] = 4
+
+    labels = ['Non-road', 'normal road', 'high gradient road', 'selected cluster']
+    categorical_heatmap(ax, cat_array, data, labels, aspect='auto', cbar_kws=None)
+
 def plot_statistics(title, data, tolerances):
     fig_stats, (ax1, ax2) = plt.subplots(ncols=2)
     fig_stats.suptitle(title)
