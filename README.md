@@ -61,7 +61,9 @@ Usage: pave-analyser [OPTIONS]
   configure the data processing is specified below.
 
 Options:
-  --cache / --no-cache            Wheter or not to use caching. If this is
+  --plots / --no-plots            Whether or not to create plots.  [default:
+                                  True]
+  --cache / --no-cache            Whether or not to use caching. If this is
                                   enabled and no caching files is found in
                                   "./.cache" the data will be processed from
                                   scratch and cached afterwards. The directory
@@ -82,6 +84,13 @@ Options:
   --gradient_tolerance FLOAT      Tolerance on the temperature difference
                                   during temperature gradient detection.
                                   [default: 10.0]
+  --cluster_threshold_npixels INTEGER
+                                  Minimum amount of pixels that should be in a
+                                  cluster. Clusters below this value will be
+                                  discarded.  [default: 0]
+  --cluster_threshold_sqm FLOAT   Minimum size of a cluster in square meters.
+                                  Clusters below this value will be discarded.
+                                  [default: 0.0]
   --tolerance_range <INTEGER INTEGER INTEGER>...
                                   Range of tolerance values (e.g. "--
                                   tolerance_range <start> <end> <step size>")
