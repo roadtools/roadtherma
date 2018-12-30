@@ -1,10 +1,38 @@
 import numpy as np
 
-def trim_temperature(df, trim_threshold, percentage_above):
+from .utils import split_temperature_data, merge_temperature_data
+
+def trim_temperature_data(data, threshold, percentage_above):
     """
-    Trim the dataframe such that all outer rows and columns that only contains
+    Trim the temperature heatmap dataframe such that all outer rows and columns that only contains
     `percentage_above` temperature values below `threshold` will be will be discarded.
     """
+    df = data.df.copy(deep=True)
+    df_temperature, df_rest = split_temperature_data(df)
+    df_temperature = _trim_temperature(df_temperature, threshold, percentage_above)
+    data.df = merge_temperature_data(df_temperature, df_rest)
+    return data
+
+
+def estimate_road_length(data, threshold, adjust_npixel):
+    """
+    Estimate the road length of each transversal section (row) of the road.
+    Return a list of offsets for each row (transversal line).
+    """
+    pixels = data.temperatures.values
+    offsets = []
+    road_pixels = np.zeros(pixels.shape, dtype='bool')
+    for idx in range(pixels.shape[0]):
+        start = _estimate_road_edge_right(pixels[idx, :], threshold)
+        end = _estimate_road_edge_left(pixels[idx, :], threshold)
+        road_pixels[idx, start:end] = 1
+        offsets.append((start + adjust_npixel, end - adjust_npixel))
+    data.offsets = offsets
+    data.road_pixels = road_pixels
+    return data
+
+
+def _trim_temperature(df, trim_threshold, percentage_above):
     df = _trim_temperature_columns(df, trim_threshold, percentage_above)
     df = _trim_temperature_columns(df.T, trim_threshold, percentage_above).T
     return df
@@ -29,21 +57,6 @@ def _trim(df, column, threshold_temp, percentage_above):
     else:
         del df[column]
         return True
-
-
-def estimate_road_length(pixels, threshold, adjust_npixel):
-    """
-    Estimate the road length of each transversal section (row) of the road.
-    Return a list of offsets for each row (transversal line).
-    """
-    offsets = []
-    road_pixels = np.zeros(pixels.shape, dtype='bool')
-    for idx in range(pixels.shape[0]):
-        start = _estimate_road_edge_right(pixels[idx, :], threshold)
-        end = _estimate_road_edge_left(pixels[idx, :], threshold)
-        road_pixels[idx, start:end] = 1
-        offsets.append((start + adjust_npixel, end - adjust_npixel))
-    return offsets, road_pixels
 
 
 def _estimate_road_edge_right(line, threshold):

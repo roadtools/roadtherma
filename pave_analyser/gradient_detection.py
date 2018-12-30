@@ -1,19 +1,19 @@
 import networkx as nx
 import numpy as np
 
-from .clusters import create_cluster_dataframe
-
 TOLERANCE_RANGE_STEP = 0.5
 tol_start, tol_end = (5, 15)
 tolerances = np.arange(tol_start, tol_end, TOLERANCE_RANGE_STEP)
 
-def detect_high_gradient_pixels(data, offsets, tolerance, diagonal_adjacency=True):
+
+def detect_high_gradient_pixels(data, tolerance, diagonal_adjacency=True):
     """
     Return a boolean array the same size as `df_temperature` indexing all pixels
     having higher gradients than what is supplied in `config.gradient_tolerance`.
     The `offsets` list contains the road section identified for each transversal
     line (row) in the data.
     """
+    offsets = data.offsets
     temperatures = data.temperatures.values
     gradient_map = np.zeros(temperatures.shape, dtype='bool')
     edges = []
@@ -33,8 +33,10 @@ def detect_high_gradient_pixels(data, offsets, tolerance, diagonal_adjacency=Tru
     add_edges(_detect_transversal_gradients(idx + 1, offsets, temperatures, gradient_map, tolerance))
 
     gradient_graph = _create_gradient_graph(edges)
-    clusters = create_cluster_dataframe(data, list(_extract_clusters(gradient_graph)))
-    return gradient_map, clusters
+    clusters_raw = list(_extract_clusters(gradient_graph))
+    data.gradient_pixels = gradient_map
+    data.clusters_raw =  clusters_raw
+    return data
 
 
 def _iter_edges(edges):

@@ -85,6 +85,6 @@ def calculate_velocity(df):
 def calculate_tolerance_vs_percentage_high_gradient(data, tolerances):
     percentage_high_gradients = list()
     for tolerance in tolerances:
-        high_gradients, _ = detect_high_gradient_pixels(data, data.offsets, tolerance)
-        percentage_high_gradients.append((high_gradients.sum() / data.nroad_pixels) * 100)
+        detect_high_gradient_pixels(data, tolerance)
+        percentage_high_gradients.append((data.gradient_pixels.sum() / data.nroad_pixels) * 100)
     return percentage_high_gradients

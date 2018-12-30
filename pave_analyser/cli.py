@@ -3,10 +3,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import click
 
-from .data import PavementIRData, PavementIRDataRaw
+from .data import PavementIRData, cache_path, analyse_ir_data
 from .utils import calculate_velocity, print_overall_stats
 from .plotting import plot_statistics, plot_heatmaps, plot_heatmaps_section, save_figures
 from .clusters import filter_clusters
+
 
 matplotlib.rcParams.update({'font.size': 6})
 
@@ -49,14 +50,27 @@ def script(plots, cache, savefig, trim_threshold, percentage_above, roadwidth_th
     for n, (title, filepath, reader, pixel_width) in enumerate(data_files):
         print('Processing data file #{} - {}'.format(n, title))
         print('Path: {}'.format(filepath))
+        cache_file_raw = cache_path(filepath, './.cache/{}_raw.pickle')
+        cache_file = cache_path(filepath, './.cache/{}.pickle')
         if cache:
-            data_raw = PavementIRDataRaw.from_cache(title, filepath)
-            data = PavementIRData.from_cache(title, filepath)
-            if data is None or data_raw is None:
-                cache = False
+            data_raw = PavementIRData.from_cache(cache_file_raw)
+            if data_raw is None:
+                data_raw = PavementIRData(title, filepath, reader, pixel_width)
+                data_raw.cache(cache_file_raw)
+            data = PavementIRData.from_cache(cache_file)
+            if data is None:
+                data = analyse_ir_data(
+                        data_raw, trim_threshold, percentage_above,
+                        roadwidth_threshold, adjust_npixel, gradient_tolerance
+                        )
+                data.cache(cache_file)
+
         if not cache:
-            data_raw = PavementIRDataRaw(title, filepath, reader, pixel_width)
-            data = PavementIRData(data_raw, roadwidth_threshold, adjust_npixel, gradient_tolerance, trim_threshold, percentage_above)
+            data_raw = PavementIRData(title, filepath, reader, pixel_width)
+            data = analyse_ir_data(
+                    data_raw, trim_threshold, percentage_above,
+                    roadwidth_threshold, adjust_npixel, gradient_tolerance
+                    )
 
         calculate_velocity(data.df)
         filter_clusters(data, npixels=cluster_threshold_npixels, sqm=cluster_threshold_sqm)

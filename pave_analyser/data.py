@@ -1,9 +1,11 @@
+import copy
 import pickle
 import pandas as pd
 
-from .utils import split_temperature_data, merge_temperature_data
-from .road_identification import trim_temperature, estimate_road_length
+from .utils import split_temperature_data
+from .road_identification import trim_temperature_data, estimate_road_length
 from .gradient_detection import detect_high_gradient_pixels
+from .clusters import create_cluster_dataframe
 
 
 def _read_TF(filename):
@@ -83,42 +85,53 @@ _readers = {
         }
 
 
-def _cache_path(self, filepath):
+def cache_path(filepath, template):
     *_, fname = filepath.split('/')
-    return self.cache_path.format(fname)
+    return template.format(fname)
 
+def analyse_ir_data(
+        data_raw, trim_threshold, percentage_above, roadwidth_threshold,
+        adjust_npixel, gradient_tolerance, diagonal_adjacency=True):
+    data = copy.deepcopy(data_raw)
+    trim_temperature_data(data, trim_threshold, percentage_above)
+    estimate_road_length(data, roadwidth_threshold, adjust_npixel)
+    detect_high_gradient_pixels(data, gradient_tolerance, diagonal_adjacency)
+    create_cluster_dataframe(data)
+    return data
 
-class PavementIRDataRaw:
-    cache_path = './.cache/{}_raw.pickle'
-
-    def __init__(self, title, filepath, reader, pixel_width, cache=True):
+class PavementIRData:
+    def __init__(self, title, filepath, reader, pixel_width):
         self.title = title
         self.filepath = filepath
         self.reader = reader
         self.pixel_width = pixel_width
         self.df = _readers[reader](filepath)
-        if cache:
-            self.cache()
 
     @classmethod
-    def from_cache(cls, title, filepath):
+    def from_cache(cls, filepath):
         try:
-            with open(_cache_path(cls, filepath), 'rb') as f:
+            with open(filepath, 'rb') as f:
                 return pickle.load(f)
         except FileNotFoundError:
             return None
 
-    def cache(self):
-        with open(_cache_path(self, self.filepath), 'wb') as f:
+    def cache(self, filepath):
+        with open(filepath, 'wb') as f:
             pickle.dump(self, f)
+
+    def resize(self, start, end):
+        self.df = self.df[start:end]
+        if self.offsets is not None:
+            self.offsets = self.offsets[start:end]
+        if self.road_pixels is not None:
+            self.road_pixels = self.road_pixels[start:end]
+        if self.gradient_pixels is not None:
+            self.gradient_pixels = self.gradient_pixels[start:end]
 
     @property
     def temperatures(self):
         df_temperature, _ = split_temperature_data(self.df)
         return df_temperature
-
-    def resize(self, start, end):
-        self.df = self.df[start:end]
 
     @property
     def pixel_height(self):
@@ -133,38 +146,8 @@ class PavementIRDataRaw:
         else:
             return 'N/A'
 
-class PavementIRData(PavementIRDataRaw):
-    cache_path = './.cache/{}.pickle'
-
-    def __init__(self, data, roadwidth_threshold, adjust_npixel, gradient_tolerance, trim_threshold, percentage_above, cache=True):
-        ### Copy attributes from PavementIRDataRaw instance
-        self.title = data.title
-        self.filepath = data.filepath
-        self.reader = data.reader
-        self.pixel_width = data.pixel_width
-
-        ### Load the data and perform initial trimming
-        self.df = self._trim_data(data.df, trim_threshold, percentage_above)
-        self.offsets, self.road_pixels = estimate_road_length(self.temperatures.values, roadwidth_threshold, adjust_npixel)
-
-        ### Perform gradient detection
-        self.gradient_pixels, self.clusters = detect_high_gradient_pixels(self,
-                self.offsets, gradient_tolerance, diagonal_adjacency=True)
-        if cache:
-            self.cache()
-
-    def _trim_data(self, df, trim_threshold, percentage_above):
-        df = df.copy(deep=True)
-        df_temperature, df_rest = split_temperature_data(df)
-        df_temperature = trim_temperature(df_temperature, trim_threshold, percentage_above)
-        return merge_temperature_data(df_temperature, df_rest)
-
-    def resize(self, start, end):
-        self.df = self.df[start:end]
-        self.offsets = self.offsets[start:end]
-        self.road_pixels = self.road_pixels[start:end]
-        self.gradient_pixels = self.gradient_pixels[start:end]
-
     @property
     def nroad_pixels(self):
-        return self.road_pixels.sum()
+        if self.road_pixels is not None:
+            return self.road_pixels.sum()
+        return None

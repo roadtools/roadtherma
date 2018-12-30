@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-def create_cluster_dataframe(data, clusters):
-    clusters_npixel = np.array([len(cluster) for cluster in clusters])
-    clusters = [np.array(cluster) for cluster in clusters]
+def create_cluster_dataframe(data):
+    clusters_npixel = np.array([len(cluster) for cluster in data.clusters_raw])
+    clusters = [np.array(cluster) for cluster in data.clusters_raw]
     df = pd.DataFrame.from_dict({
         'size_npixel':clusters_npixel,
         'coordinates':clusters
@@ -16,7 +16,8 @@ def create_cluster_dataframe(data, clusters):
     df['start_time'] = df.apply(_start_time, axis=1, args=(data.df.time,))
     df['end_time'] = df.apply(_end_time, axis=1, args=(data.df.time,))
     df['mean_temperature'] = df.apply(_mean_cluster_temperature, axis=1, args=(data.temperatures.values,))
-    return df
+    data.clusters = df
+    return data
 
 
 def filter_clusters(data, sqm=None, npixels=None):
