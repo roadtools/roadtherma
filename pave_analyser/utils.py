@@ -6,22 +6,20 @@ from .gradient_detection import detect_high_gradient_pixels
 
 def print_overall_stats(data):
     report_template = """
-========== REPORT ON THERMAL DATA ==========
-Title of processed file: {title}
-Location of processed file: {filepath}
+============= REPORT ON THERMAL DATA =============
+Title:{title}
+Location of file: {filepath}
 Program finished running: {today}
 
----------- Overall Results ----------
+---------------- Overall Results -----------------
 Chainage start: {chainage_start} m
-Chainage end: {chainage_end} m
+Chainage end:   {chainage_end} m
 Paving operation start: {pavetime_start}
-Paving operation end: {pavetime_end}
-Mean paving velocity: {mean_velocity:.1f}
-Average paving temperature: {mean_paving_temp:.1f} C
-Area of road with high gradient: {area_high_gradient:.1f} m²
-Percentage of road with high gradient: {percentage_high_gradient:.1f}%
-============================================
-"""
+Paving operation end:   {pavetime_end}
+Mean paving velocity:   {mean_velocity:.1f} m/min
+Average paving temperature:         {mean_paving_temp:.1f} C
+Area of road with high gradient:    {area_high_gradient:.1f} m²
+Percentage road with high gradient: {percentage_high_gradient:.1f}%"""
     temperature_map = data.temperatures.values
     mean_paving_temp = temperature_map[data.road_pixels].mean()
     print(report_template.format(
@@ -37,6 +35,33 @@ Percentage of road with high gradient: {percentage_high_gradient:.1f}%
         area_high_gradient=data.clusters['size_m^2'].sum(),
         percentage_high_gradient=(data.clusters.size_npixel.sum() / data.road_pixels.sum()) * 100
         ))
+
+
+def print_cluster_stats(data):
+    header = "----------------- Cluster Stats -----------------"
+    footer = "=================================================="
+    template = \
+"""Number of pixels: {npixels}
+Total area:       {area:.1f} m²
+Mean temperature: {temperature:.1f} C
+Mean Chainage:    {chainage:.1f} m
+Time start:       {time_start}
+Time end:         {time_end}
+Mean GPS: {gps}
+-------------------------------------------------"""
+    print(header)
+    for idx, cluster in data.clusters.iterrows():
+        print(template.format(
+            npixels=cluster.size_npixel,
+            area=cluster['size_m^2'],
+            temperature=cluster.mean_temperature,
+            chainage=cluster.center_chainage,
+            gps=cluster.center_gps,
+            time_start=cluster.start_time,
+            time_end=cluster.end_time
+            ))
+    print(footer)
+
 
 def split_temperature_data(df):
     """

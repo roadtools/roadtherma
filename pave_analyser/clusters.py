@@ -30,10 +30,13 @@ def filter_clusters(data, sqm=None, npixels=None):
 
     # rebuild gradient_map based on the (possibly) reduced set of clusters
     gradient_pixels = np.zeros(data.gradient_pixels.shape, dtype='bool')
+    clusters_raw = []
     for idx, cluster in data.clusters.iterrows():
         coords = cluster.coordinates
         gradient_pixels[coords[:, 0], coords[:, 1]] = 1
+        clusters_raw.append(coords.tolist())
     data.gradient_pixels = gradient_pixels
+    data.clusters_raw = clusters_raw
     return data
 
 

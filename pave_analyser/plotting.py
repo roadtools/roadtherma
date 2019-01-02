@@ -110,7 +110,7 @@ def plot_single_cluster(data, cluster_no):
     cat_array[~ data.road_pixels] = 1
     cat_array[data.road_pixels] = 2
     cat_array[data.gradient_pixels] = 3
-    coords = data.clusters[cluster_no]
+    coords = data.clusters.coordinates.iloc[cluster_no]
     for row, col in coords:
         cat_array[row, col] = 4
 
