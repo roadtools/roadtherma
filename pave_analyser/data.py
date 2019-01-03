@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 
 from .utils import split_temperature_data
-from .road_identification import trim_temperature_data, estimate_road_length
+from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
 from .gradient_detection import detect_high_gradient_pixels
 
 
@@ -89,10 +89,11 @@ def cache_path(filepath, template):
     return template.format(fname)
 
 def analyse_ir_data(
-        data_raw, trim_threshold, percentage_above, roadwidth_threshold,
+        data_raw, trim_threshold, percentage_above, lane_threshold, roadwidth_threshold,
         adjust_npixel, gradient_tolerance, diagonal_adjacency=True):
     data = copy.deepcopy(data_raw)
     trim_temperature_data(data, trim_threshold, percentage_above)
+    detect_paving_lanes(data, lane_threshold, select='warmest')
     estimate_road_length(data, roadwidth_threshold, adjust_npixel)
     detect_high_gradient_pixels(data, gradient_tolerance, diagonal_adjacency)
     return data

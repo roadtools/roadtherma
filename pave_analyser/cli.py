@@ -18,13 +18,14 @@ matplotlib.rcParams.update({'font.size': 6})
 @click.option('--stats/--no-stats', default=True, show_default=True, help='Wheter or not to print summary statistics for each dataset.')
 @click.option('--trim_threshold', default=80.0, show_default=True, help='Temperature threshold for the data trimming step.')
 @click.option('--percentage_above', default=0.2, show_default=True, help='Percentage of data that should be above trim_threshold in order for that outer longitudinal line to be removed.')
+@click.option('--lane_threshold', default=110.0, show_default=True, help='Threshold temperature used for paving lane detection.')
 @click.option('--roadwidth_threshold', default=80.0, show_default=True, help='Temperature threshold for the road width estimation step.')
 @click.option('--adjust_npixel', default=2, show_default=True, help='Additional number of pixels to cut off edges during road width estimation.')
 @click.option('--gradient_tolerance', default=10.0, show_default=True, help='Tolerance on the temperature difference during temperature gradient detection.')
 @click.option('--cluster_npixels', default=0, show_default=True, help='Minimum amount of pixels that should be in a cluster. Clusters below this value will be discarded.')
 @click.option('--cluster_sqm', default=0.0, show_default=True, help='Minimum size of a cluster in square meters. Clusters below this value will be discarded.')
 @click.option('--tolerance_range', nargs=3, default=(5, 20, 1), show_default=True, help='Range of tolerance values (e.g. "--tolerance_range <start> <end> <step size>") to use when plotting percentage of road that is comprised of high gradients vs gradient tolerance.')
-def script(plots, cache, savefig, stats, trim_threshold, percentage_above, roadwidth_threshold, adjust_npixel,
+def script(plots, cache, savefig, stats, trim_threshold, percentage_above, lane_threshold, roadwidth_threshold, adjust_npixel,
          gradient_tolerance, cluster_npixels, cluster_sqm, tolerance_range):
     """Command line tool for analysing Pavement IR data.
     It assumes that a file './data_files.py' (located where this script is executed)
@@ -61,7 +62,7 @@ def script(plots, cache, savefig, stats, trim_threshold, percentage_above, roadw
             data = PavementIRData.from_cache(cache_file)
             if data is None:
                 data = analyse_ir_data(
-                        data_raw, trim_threshold, percentage_above,
+                        data_raw, trim_threshold, percentage_above, lane_threshold,
                         roadwidth_threshold, adjust_npixel, gradient_tolerance
                         )
                 data.cache(cache_file)
@@ -69,7 +70,7 @@ def script(plots, cache, savefig, stats, trim_threshold, percentage_above, roadw
         if not cache:
             data_raw = PavementIRData(title, filepath, reader, pixel_width)
             data = analyse_ir_data(
-                    data_raw, trim_threshold, percentage_above,
+                    data_raw, trim_threshold, percentage_above, lane_threshold,
                     roadwidth_threshold, adjust_npixel, gradient_tolerance
                     )
 

@@ -14,6 +14,23 @@ def trim_temperature_data(data, threshold, percentage_above):
     return data
 
 
+def detect_paving_lanes(data, threshold, select='warmest'):
+    """
+    Detect lanes that is being actively paved during a two-lane paving operation where
+    the lane not is not being paved during data acquisition has been recently paved, thus
+    having a higher temperature compared to the surroundings.
+    """
+    df = data.df.copy(deep=True)
+    df_temperature, df_rest = split_temperature_data(df)
+    seperators = _calculate_lane_seperators(df_temperature.values, threshold)
+    if seperators is None:
+        return 1
+    else:
+        df_temperature = _select_lane(df_temperature, seperators, select)
+        data.df = merge_temperature_data(df_temperature, df_rest)
+        return 2
+
+
 def estimate_road_length(data, threshold, adjust_npixel):
     """
     Estimate the road length of each transversal section (row) of the road.
@@ -30,6 +47,41 @@ def estimate_road_length(data, threshold, adjust_npixel):
     data.offsets = offsets
     data.road_pixels = road_pixels
     return data
+
+
+def _calculate_lane_seperators(pixels, threshold):
+    mean_temp = np.mean(pixels, axis=0)
+    above_thresh = (mean_temp > threshold).astype('int')
+    start = len(mean_temp) - len(np.trim_zeros(above_thresh, 'f'))
+    end = - (len(mean_temp) - len(np.trim_zeros(above_thresh, 'b')))
+    below_thresh = ~ above_thresh.astype('bool')
+    if sum(below_thresh[start:end]) == 0:
+        return None
+    elif sum(below_thresh[start:end]) > 0:
+        (midpoint, ) = np.where(mean_temp[start:end] == min(mean_temp[start:end]))
+        midpoint = midpoint[0] + start
+    return (start, midpoint, end)
+
+
+def _select_lane(df_temperature, seperators, select):
+    start, midpoint, end = seperators
+    f_mean = df_temperature.iloc[:, start:midpoint].mean().mean()
+    b_mean = df_temperature.iloc[:, midpoint + 1:end].mean().mean()
+    columns = df_temperature.columns
+    if f_mean > b_mean:
+        warm_lane = columns[:midpoint + 1]
+        cold_lane = columns[midpoint:] # We exclude the seperating column
+    else:
+        warm_lane = columns[midpoint:]
+        cold_lane = columns[:midpoint + 1]
+
+    if select == 'warmest':
+        df_temperature = df_temperature[warm_lane]
+    elif select == 'coldest':
+        df_temperature = df_temperature[cold_lane]
+    else:
+        raise Exception('Unknown selection method "{}"'.format(select))
+    return df_temperature
 
 
 def _trim_temperature(df, trim_threshold, percentage_above):
