@@ -6,7 +6,7 @@ import click
 from .data import PavementIRData, cache_path, analyse_ir_data
 from .utils import calculate_velocity, print_overall_stats, print_cluster_stats
 from .plotting import plot_statistics, plot_heatmaps, plot_heatmaps_section, save_figures
-from .clusters import filter_clusters
+from .clusters import filter_clusters, create_cluster_dataframe
 
 
 matplotlib.rcParams.update({'font.size': 6})
@@ -14,7 +14,8 @@ matplotlib.rcParams.update({'font.size': 6})
 @click.command()
 @click.option('--plots/--no-plots', default=True, show_default=True,help='Whether or not to create plots.')
 @click.option('--cache/--no-cache', default=True, show_default=True,help='Whether or not to use caching. If this is enabled and no caching files is found in "./.cache" the data will be processed from scratch and cached afterwards. The directory "./cache" must exist for caching to work.')
-@click.option('--savefig/--no-savefig', default=False, show_default=True, help='Wheter or not to save the generated plots as png-files.')
+@click.option('--savefig/--no-savefig', default=False, show_default=True, help='Wheter or not to save the generated plots as png-files instead of showing them.')
+@click.option('--stats/--no-stats', default=True, show_default=True, help='Wheter or not to print summary statistics for each dataset.')
 @click.option('--trim_threshold', default=80.0, show_default=True, help='Temperature threshold for the data trimming step.')
 @click.option('--percentage_above', default=0.2, show_default=True, help='Percentage of data that should be above trim_threshold in order for that outer longitudinal line to be removed.')
 @click.option('--roadwidth_threshold', default=80.0, show_default=True, help='Temperature threshold for the road width estimation step.')
@@ -23,7 +24,7 @@ matplotlib.rcParams.update({'font.size': 6})
 @click.option('--cluster_npixels', default=0, show_default=True, help='Minimum amount of pixels that should be in a cluster. Clusters below this value will be discarded.')
 @click.option('--cluster_sqm', default=0.0, show_default=True, help='Minimum size of a cluster in square meters. Clusters below this value will be discarded.')
 @click.option('--tolerance_range', nargs=3, default=(5, 20, 1), show_default=True, help='Range of tolerance values (e.g. "--tolerance_range <start> <end> <step size>") to use when plotting percentage of road that is comprised of high gradients vs gradient tolerance.')
-def script(plots, cache, savefig, trim_threshold, percentage_above, roadwidth_threshold, adjust_npixel,
+def script(plots, cache, savefig, stats, trim_threshold, percentage_above, roadwidth_threshold, adjust_npixel,
          gradient_tolerance, cluster_npixels, cluster_sqm, tolerance_range):
     """Command line tool for analysing Pavement IR data.
     It assumes that a file './data_files.py' (located where this script is executed)
@@ -72,10 +73,12 @@ def script(plots, cache, savefig, trim_threshold, percentage_above, roadwidth_th
                     roadwidth_threshold, adjust_npixel, gradient_tolerance
                     )
 
-        calculate_velocity(data.df)
-        filter_clusters(data, npixels=cluster_npixels, sqm=cluster_sqm)
-        print_overall_stats(data)
-        print_cluster_stats(data)
+        if stats:
+            create_cluster_dataframe(data)
+            filter_clusters(data, npixels=cluster_npixels, sqm=cluster_sqm)
+            calculate_velocity(data.df)
+            print_overall_stats(data)
+            print_cluster_stats(data)
         if plots:
             fig_stats = plot_statistics(title, data, tolerances)
             fig_heatmaps = plot_heatmaps(title, data, data_raw)
@@ -85,9 +88,12 @@ def script(plots, cache, savefig, trim_threshold, percentage_above, roadwidth_th
                     'fig_heatmaps_section':fig_heatmaps_section,
                     'fig_stats': fig_stats
                     }
-            plt.show()
             if savefig:
                 save_figures(figures, n)
+            else:
+                plt.show()
+            for fig in figures.values():
+                plt.close(fig)
     return data, data_raw
 
 

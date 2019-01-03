@@ -5,7 +5,6 @@ import pandas as pd
 from .utils import split_temperature_data
 from .road_identification import trim_temperature_data, estimate_road_length
 from .gradient_detection import detect_high_gradient_pixels
-from .clusters import create_cluster_dataframe
 
 
 def _read_TF(filename):
@@ -96,7 +95,6 @@ def analyse_ir_data(
     trim_temperature_data(data, trim_threshold, percentage_above)
     estimate_road_length(data, roadwidth_threshold, adjust_npixel)
     detect_high_gradient_pixels(data, gradient_tolerance, diagonal_adjacency)
-    create_cluster_dataframe(data)
     return data
 
 class PavementIRData:
