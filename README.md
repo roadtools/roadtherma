@@ -1,4 +1,4 @@
-## Analysis tool for road paving measurements
+## Analysis tool for thermal road data
 This repository contains code for processing and analysing data from termal
 cameras measured during paving operations. The tool has the following essential
 features:
@@ -13,8 +13,8 @@ features:
 On unix-based systems open a terminal and run the following
 
 ```
-$ git clone https://github.com/lgandersen/pave-analyser.git
-$ pip3 install pave-analyser
+$ git clone https://github.com/roadtools/roadtherma.git
+$ pip3 install roadtherma
 ```
 
 and thats it! You sould now be able to use the CLI tool described below.
@@ -27,18 +27,18 @@ help screen containing usage instructions.
 
 From a terminal:
 ```
-$ pave-analyser --help
+$ roadtherma --help
 ```
 
 From IPython:
 ```
-In [21]: !pave-analyser --help
+In [21]: !roadtherma --help
 ```
 
 This should produce the following text:
 
 ```
-Usage: pave-analyser [OPTIONS]
+Usage: roadtherma [OPTIONS]
 
   Command line tool for analysing Pavement IR data. It assumes that a file
   './data_files.py' (located where this script is executed) exists and
