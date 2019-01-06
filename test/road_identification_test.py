@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from pave_analyser.road_identification import estimate_road_length, detect_paving_lanes
+from roadtherma.road_identification import estimate_road_length, detect_paving_lanes
 
 
 class DummyTemperatures:

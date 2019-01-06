@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-from pave_analyser.road_identification import estimate_road_length
-from pave_analyser.gradient_detection import _detect_longitudinal_gradients, _detect_transversal_gradients, detect_high_gradient_pixels
+from roadtherma.road_identification import estimate_road_length
+from roadtherma.gradient_detection import _detect_longitudinal_gradients, _detect_transversal_gradients, detect_high_gradient_pixels
 
 class DummyTemperatures:
     def __init__(self, array):
