@@ -4,8 +4,15 @@ from .utils import split_temperature_data, merge_temperature_data
 
 def trim_temperature_data(data, threshold, percentage_above):
     """
-    Trim the temperature heatmap dataframe such that all outer rows and columns that only contains
-    `percentage_above` temperature values below `threshold` will be will be discarded.
+    Trim the temperature heatmap data by removing all outer rows and columns that only contains
+    `percentage_above` temperature values below `threshold`. The input `data` is modified inplace.
+
+    :param data: Temperature data that should be trimmed.
+    :type data: instance of :class:`.PavementIRData`
+    :param float threshold: Temperature threshold used in data-trimming.
+    :param float percentage_above: Percentage of pixels in a row/column that is allowed to have temperatures
+         above `threshold` and still be discarded.
+    :return: Same as the `data` argument.
     """
     df = data.df.copy(deep=True)
     df_temperature, df_rest = split_temperature_data(df)
@@ -16,9 +23,19 @@ def trim_temperature_data(data, threshold, percentage_above):
 
 def detect_paving_lanes(data, threshold, select='warmest'):
     """
-    Detect lanes that is being actively paved during a two-lane paving operation where
-    the lane not is not being paved during data acquisition has been recently paved, thus
+    Detect lanes the one that is being actively paved during a two-lane paving operation where
+    the lane that is not being paved during data acquisition has been recently paved and thus
     having a higher temperature compared to the surroundings.
+
+    :param data: Temperature data where either one or two lanes should
+        be detected.
+    :type data: instance of :class:`.PavementIRData`
+    :param float threshold: Temperature threshold used to detect both lanes
+        from the surroundings. This means that the temperature should be sensitive
+        enough to detect the coldest lane.
+    :param str select: Lane selection method. `'warmest'` selects the lane with the
+        highest mean temperature and `'lowest'` selects the lane lowest temperature.
+    :return int: Number of lanes detected. This can be either 1 or 2.
     """
     df = data.df.copy(deep=True)
     df_temperature, df_rest = split_temperature_data(df)
@@ -33,9 +50,17 @@ def detect_paving_lanes(data, threshold, select='warmest'):
 
 def estimate_road_length(data, threshold, adjust_npixel):
     """
-    Estimate the road length of each transversal section (row) of the road.
-    Return a list of offsets for each row (transversal line).
+    Estimate the road length of each transversal line (row) of the temperature
+    heatmap data.
+
+    :param data: Temperature data to perform road length detection on.
+    :type data: instance of :class:`.PavementIRData`
+    :param threshold: Threshold temperature used when classifying if pixels
+        belongs to the road or not.
+
+    :return: Same as the `data` argument.
     """
+#FIXME DOCSTRING NOT DONE, ARGUMENT MISSING
     pixels = data.temperatures.values
     offsets = []
     road_pixels = np.zeros(pixels.shape, dtype='bool')
