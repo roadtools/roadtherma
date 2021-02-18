@@ -109,14 +109,14 @@ class PavementIRData:
         self.df = _readers[reader](filepath)
 
     @classmethod
-    def from_cache(cls, filepath):
+    def from_file(cls, filepath):
         try:
             with open(filepath, 'rb') as f:
                 return pickle.load(f)
         except FileNotFoundError:
             return None
 
-    def cache(self, filepath):
+    def to_file(self, filepath):
         with open(filepath, 'wb') as f:
             pickle.dump(self, f)
 

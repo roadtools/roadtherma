@@ -13,7 +13,6 @@ matplotlib.rcParams.update({'font.size': 6})
 
 @click.command()
 @click.option('--plots/--no-plots', default=True, show_default=True,help='Whether or not to create plots.')
-@click.option('--cache/--no-cache', default=True, show_default=True,help='Whether or not to use caching. If this is enabled and no caching files is found in "./.cache" the data will be processed from scratch and cached afterwards. The directory "./cache" must exist for caching to work.')
 @click.option('--savefig/--no-savefig', default=False, show_default=True, help='Wheter or not to save the generated plots as png-files instead of showing them.')
 @click.option('--stats/--no-stats', default=True, show_default=True, help='Wheter or not to print summary statistics for each dataset.')
 @click.option('--trim_threshold', default=80.0, show_default=True, help='Temperature threshold for the data trimming step.')
@@ -52,27 +51,11 @@ def script(plots, cache, savefig, stats, trim_threshold, percentage_above, lane_
     for n, (title, filepath, reader, pixel_width) in enumerate(data_files):
         print('Processing data file #{} - {}'.format(n, title))
         print('Path: {}'.format(filepath))
-        cache_file_raw = cache_path(filepath, './.cache/{}_raw.pickle')
-        cache_file = cache_path(filepath, './.cache/{}.pickle')
-        if cache:
-            data_raw = PavementIRData.from_cache(cache_file_raw)
-            if data_raw is None:
-                data_raw = PavementIRData(title, filepath, reader, pixel_width)
-                data_raw.cache(cache_file_raw)
-            data = PavementIRData.from_cache(cache_file)
-            if data is None:
-                data = analyse_ir_data(
-                        data_raw, trim_threshold, percentage_above, lane_threshold,
-                        roadwidth_threshold, adjust_npixel, gradient_tolerance
-                        )
-                data.cache(cache_file)
-
-        if not cache:
-            data_raw = PavementIRData(title, filepath, reader, pixel_width)
-            data = analyse_ir_data(
-                    data_raw, trim_threshold, percentage_above, lane_threshold,
-                    roadwidth_threshold, adjust_npixel, gradient_tolerance
-                    )
+        data_raw = PavementIRData(title, filepath, reader, pixel_width)
+        data = analyse_ir_data(
+                data_raw, trim_threshold, percentage_above, lane_threshold,
+                roadwidth_threshold, adjust_npixel, gradient_tolerance
+                )
 
         if stats:
             create_cluster_dataframe(data)
@@ -80,6 +63,7 @@ def script(plots, cache, savefig, stats, trim_threshold, percentage_above, lane_
             calculate_velocity(data.df)
             print_overall_stats(data)
             print_cluster_stats(data)
+
         if plots:
             fig_stats = plot_statistics(title, data, tolerances)
             fig_heatmaps = plot_heatmaps(title, data, data_raw)
