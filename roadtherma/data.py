@@ -88,6 +88,7 @@ def cache_path(filepath, template):
     *_, fname = filepath.split('/')
     return template.format(fname)
 
+
 def analyse_ir_data(
         data_raw, trim_threshold, percentage_above, lane_threshold, roadwidth_threshold,
         adjust_npixel, gradient_tolerance, diagonal_adjacency=True):
@@ -97,6 +98,7 @@ def analyse_ir_data(
     estimate_road_length(data, roadwidth_threshold, adjust_npixel)
     detect_high_gradient_pixels(data, gradient_tolerance, diagonal_adjacency)
     return data
+
 
 class PavementIRData:
     def __init__(self, title, filepath, reader, pixel_width):

@@ -4,6 +4,18 @@ import pandas as pd
 
 from .gradient_detection import detect_high_gradient_pixels
 
+def print_csv(data):
+    calculate_velocity(data.df)
+    temp, rest = split_temperature_data(data.df)
+    temp = data.temperatures
+    temp.values[~ data.road_pixels] = 1
+    temp.values[data.road_pixels] = 2
+    temp.values[data.gradient_pixels] = 3
+    df = merge_temperature_data(temp, rest)
+    #print(df.columns)
+    #print(df.head())
+
+
 def print_overall_stats(data):
     report_template = """
 ============= REPORT ON THERMAL DATA =============
