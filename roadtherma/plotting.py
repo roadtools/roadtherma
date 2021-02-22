@@ -3,6 +3,7 @@ from functools import partial
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 from matplotlib.ticker import FuncFormatter
 
 from .utils import calculate_tolerance_vs_percentage_high_gradient
@@ -10,10 +11,10 @@ from .utils import calculate_tolerance_vs_percentage_high_gradient
 def categorical_heatmap(ax, cat_array, data, labels, aspect='auto', cbar_kws=None):
     if cbar_kws is None:
         cbar_kws = dict()
-    cmap = plt.get_cmap('magma', np.max(cat_array)-np.min(cat_array)+1)
+    cmap = ListedColormap(["dimgray", "firebrick", "springgreen"])
     _set_meter_ticks_on_axes(ax, data)
     # set limits .5 outside true range
-    mat = ax.imshow(cat_array, aspect=aspect, cmap=cmap,vmin = np.min(cat_array)-.5, vmax = np.max(cat_array)+.5)
+    mat = ax.imshow(cat_array, aspect=aspect, vmin=np.min(cat_array)-.5, vmax=np.max(cat_array)+.5, cmap=cmap)
     #tell the colorbar to tick at integers
     cbar = plt.colorbar(mat, ax=ax, ticks=np.arange(np.min(cat_array),np.max(cat_array) + 1), **cbar_kws)
     cbar.set_ticklabels(labels)
