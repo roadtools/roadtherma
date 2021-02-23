@@ -6,6 +6,16 @@ from .utils import split_temperature_data
 from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
 from .gradient_detection import detect_high_gradient_pixels
 
+def analyse_ir_data(
+        data_raw, autotrim_temperature, autotrim_percentage, lane_threshold, roadwidth_threshold,
+        roadwidth_adjust_left, roadwidth_adjust_right, gradient_tolerance, diagonal_adjacency=True):
+    data = copy.deepcopy(data_raw)
+    trim_temperature_data(data, autotrim_temperature, autotrim_percentage)
+    detect_paving_lanes(data, lane_threshold, select='warmest')
+    estimate_road_length(data, roadwidth_threshold, roadwidth_adjust_left, roadwidth_adjust_right)
+    detect_high_gradient_pixels(data, gradient_tolerance, diagonal_adjacency)
+    return data
+
 
 def _read_TF(filename):
     temperatures = ['T{}'.format(n) for n in range(141)]
@@ -87,17 +97,6 @@ _readers = {
 def cache_path(filepath, template):
     *_, fname = filepath.split('/')
     return template.format(fname)
-
-
-def analyse_ir_data(
-        data_raw, trim_threshold, percentage_above, lane_threshold, roadwidth_threshold,
-        adjust_npixel, gradient_tolerance, diagonal_adjacency=True):
-    data = copy.deepcopy(data_raw)
-    trim_temperature_data(data, trim_threshold, percentage_above)
-    detect_paving_lanes(data, lane_threshold, select='warmest')
-    estimate_road_length(data, roadwidth_threshold, adjust_npixel)
-    detect_high_gradient_pixels(data, gradient_tolerance, diagonal_adjacency)
-    return data
 
 
 class PavementIRData:

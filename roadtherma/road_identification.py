@@ -2,21 +2,21 @@ import numpy as np
 
 from .utils import split_temperature_data, merge_temperature_data
 
-def trim_temperature_data(data, threshold, percentage_above):
+def trim_temperature_data(data, threshold, autotrim_percentage):
     """
     Trim the temperature heatmap data by removing all outer rows and columns that only contains
-    `percentage_above` temperature values below `threshold`. The input `data` is modified inplace.
+    `autotrim_percentage` temperature values below `threshold`. The input `data` is modified inplace.
 
     :param data: Temperature data that should be trimmed.
     :type data: instance of :class:`.PavementIRData`
     :param float threshold: Temperature threshold used in data-trimming.
-    :param float percentage_above: Percentage of pixels in a row/column that is allowed to have temperatures
+    :param float autotrim_percentage: Percentage of pixels in a row/column that is allowed to have temperatures
          above `threshold` and still be discarded.
     :return: Same as the `data` argument.
     """
     df = data.df.copy(deep=True)
     df_temperature, df_rest = split_temperature_data(df)
-    df_temperature = _trim_temperature(df_temperature, threshold, percentage_above)
+    df_temperature = _trim_temperature(df_temperature, threshold, autotrim_percentage)
     data.df = merge_temperature_data(df_temperature, df_rest)
     return data
 
@@ -48,7 +48,7 @@ def detect_paving_lanes(data, threshold, select='warmest'):
         return 2
 
 
-def estimate_road_length(data, threshold, adjust_npixel):
+def estimate_road_length(data, threshold, adjust_left, adjust_right):
     """
     Estimate the road length of each transversal line (row) of the temperature
     heatmap data.
@@ -57,18 +57,19 @@ def estimate_road_length(data, threshold, adjust_npixel):
     :type data: instance of :class:`.PavementIRData`
     :param threshold: Threshold temperature used when classifying if pixels
         belongs to the road or not.
+    :param int adjust_left: Additional number of pixels to cut off left edge after estimating road width.
+    :param int adjust_right: Additional number of pixels to cut off right edge after estimating road width.
 
     :return: Same as the `data` argument.
     """
-#FIXME DOCSTRING NOT DONE, ARGUMENT MISSING
     pixels = data.temperatures.values
     offsets = []
     road_pixels = np.zeros(pixels.shape, dtype='bool')
     for idx in range(pixels.shape[0]):
         start = _estimate_road_edge_right(pixels[idx, :], threshold)
         end = _estimate_road_edge_left(pixels[idx, :], threshold)
-        road_pixels[idx, start:end] = 1
-        offsets.append((start + adjust_npixel, end - adjust_npixel))
+        road_pixels[idx, start + adjust_left:end - adjust_right] = 1
+        offsets.append((start + adjust_left, end - adjust_right))
     data.offsets = offsets
     data.road_pixels = road_pixels
     return data
@@ -109,27 +110,27 @@ def _select_lane(df_temperature, seperators, select):
     return df_temperature
 
 
-def _trim_temperature(df, trim_threshold, percentage_above):
-    df = _trim_temperature_columns(df, trim_threshold, percentage_above)
-    df = _trim_temperature_columns(df.T, trim_threshold, percentage_above).T
+def _trim_temperature(df, autotrim_temperature, autotrim_percentage):
+    df = _trim_temperature_columns(df, autotrim_temperature, autotrim_percentage)
+    df = _trim_temperature_columns(df.T, autotrim_temperature, autotrim_percentage).T
     return df
 
 
-def _trim_temperature_columns(df, threshold, percentage_above):
+def _trim_temperature_columns(df, threshold, autotrim_percentage):
     for column_name in df.columns:
-        if not _trim(df, column_name, threshold, percentage_above):
+        if not _trim(df, column_name, threshold, autotrim_percentage):
             break
 
     for column_name in reversed(df.columns):
-        if not _trim(df, column_name, threshold, percentage_above):
+        if not _trim(df, column_name, threshold, autotrim_percentage):
             break
     return df
 
 
-def _trim(df, column, threshold_temp, percentage_above):
+def _trim(df, column, threshold_temp, autotrim_percentage):
     above_threshold = sum(df[column] > threshold_temp)
     above_threshold_pct = 100 * (above_threshold / len(df))
-    if above_threshold_pct > percentage_above:
+    if above_threshold_pct > autotrim_percentage:
         return False
     else:
         del df[column]

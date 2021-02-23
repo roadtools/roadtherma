@@ -34,11 +34,13 @@ def process_job(n, job):
     save_figures_ = job.setdefault('save_figures', True)
     print_stats = job.setdefault('print_stats', True)
     pixel_width = job.setdefault('pixel_width', 0.25)
-    trim_threshold = job.setdefault('trim_threshold', 80.0)
-    percentage_above = job.setdefault('percentage_above', 0.2)
+    autotrim_temperature = job.setdefault('autotrim_temperature', 80.0)
+    autotrim_percentage = job.setdefault('autotrim_percentage', 0.2)
     lane_threshold = job.setdefault('lane_threshold', 110.0)
     roadwidth_threshold = job.setdefault('roadwidth_threshold', 80.0)
-    adjust_npixel = job.setdefault('adjust_npixel', 2)
+    roadwidth_adjust_left = job.setdefault('roadwidth_adjust_left', 2)
+    roadwidth_adjust_right = job.setdefault('roadwidth_adjust_right', 2)
+    #adjust_npixel = job.setdefault('adjust_npixel', 2)
     gradient_tolerance = job.setdefault('gradient_tolerance', 10.0)
     cluster_npixels = job.setdefault('cluster_npixels', 0)
     cluster_sqm = job.setdefault('cluster_sqm', 0.0)
@@ -50,8 +52,9 @@ def process_job(n, job):
     print('Path: {}'.format(file_path))
     data_raw = PavementIRData(title, file_path, reader, pixel_width)
     data = analyse_ir_data(
-            data_raw, trim_threshold, percentage_above, lane_threshold,
-            roadwidth_threshold, adjust_npixel, gradient_tolerance
+            data_raw, autotrim_temperature, autotrim_percentage, lane_threshold,
+            roadwidth_threshold, roadwidth_adjust_left, roadwidth_adjust_right,
+            gradient_tolerance
             )
 
     if print_stats:

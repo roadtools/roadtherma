@@ -356,14 +356,14 @@ class TestClusterExtraction(unittest.TestCase):
 
     def test_large_cluster(self):
         threshold = 1.0
-        adjust_npixel = 0
+        adjust = 0
         tolerance = 0.1
         array_input = np.array([
             [0, 9, 8, 7, 9],
             [9, 8, 7, 8, 0]
             ])
         data = DummyData(None, array_input)
-        estimate_road_length(data, threshold, adjust_npixel)
+        estimate_road_length(data, threshold, adjust, adjust)
         detect_high_gradient_pixels(data, tolerance, diagonal_adjacency=True)
         self.assertEqual(data.offsets, [(1, 5), (0, 4)])
         np.testing.assert_array_equal(

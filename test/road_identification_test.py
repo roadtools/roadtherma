@@ -17,7 +17,7 @@ class DummyData:
 
 class TestRoadWidthDetection(unittest.TestCase):
     threshold = 1.0
-    adjust_npixel = 0
+    adjust = 0
     tolerance = 0.1
 
     def test_roadwidth_detection(self):
@@ -27,7 +27,7 @@ class TestRoadWidthDetection(unittest.TestCase):
             ])
 
         data = DummyData(pixels)
-        estimate_road_length(data, self.threshold, self.adjust_npixel)
+        estimate_road_length(data, self.threshold, self.adjust, self.adjust)
         self.assertEqual(data.offsets, [(1, 5), (0, 4)])
         np.testing.assert_array_equal(
                 data.road_pixels,
