@@ -133,7 +133,7 @@ def plot_statistics(title, data, tolerances):
     ax2.set_title('Road temperature distribution')
     ax2.set_xlabel('Temperature [C]')
     distplot_data = data.temperatures.values[data.road_pixels]
-    sns.distplot(distplot_data, color="m", ax=ax2, norm_hist=False)
+    sns.histplot(distplot_data, color="m", ax=ax2, stat='density', discrete=True, kde=True)
     return fig_stats
 
 
