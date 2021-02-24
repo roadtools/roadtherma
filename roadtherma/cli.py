@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import click
 import yaml
 
-from .data import PavementIRData, cache_path, analyse_ir_data
+from .data import PavementIRData, analyse_ir_data
 from .utils import calculate_velocity, print_overall_stats, print_cluster_stats
 from .plotting import plot_statistics, plot_heatmaps, plot_heatmaps_section, save_figures
 from .clusters import filter_clusters, create_cluster_dataframe
