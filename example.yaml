@@ -1,0 +1,25 @@
+---
+- job:
+    title: Example plot of test section         # String used as title in the figures created. Mandatory. 
+    file_path: /path/in/linux/for/data_file.txt # Path of the data file to process. Mandatory.
+    reader: voegele_example                     # Parser used when loading data file. Possible parsers: "TF", "voegele_taulov", "voegele_example" or "voegele_M119".
+    pixel_width: 0.25                           # Resolution (in meters) of pixels in the transversal direction (the horizontal resolution is derived from the chainage data).
+    create_plots: True        # Whether or not to create plots. Default: True
+    save_figures: True        # Whether or not to save the generated plots as png-files instead of showing them. Default: True
+    print_stats: True         # Whether or not to print summary statistics for each dataset. Default: True
+    autotrim_temperature: 80.0 # Temperature threshold for the data trimming step. Default: 80.0
+    autotrim_percentage: 0.2   # Percentage threshold of data below <autotrim_temperature> in order for an edge longitudinal line to be removed. Default: 0.2
+    roadwidth_threshold: 80.0 # Threshold temperature used when estimating the road width. Default: 80.0
+    roadwidth_adjust_left: 2  # Additional number of pixels to cut off left edge after estimating road width. Default: 2
+    roadwidth_adjust_right: 2 # Additional number of pixels to cut off right edge after estimating road width. Default: 2
+    lane_threshold: 110.0     # Threshold temperature used when detecting the paving lane. Default: 110.0
+    gradient_tolerance: 10.0  # Tolerance on the temperature difference during temperature gradient detection. Default: 10.0
+    cluster_npixels: 0        # Minimum amount of pixels in a cluster. Clusters below this value will be discarded. Default: 0
+    cluster_sqm: 0.0          # Minimum size of a cluster in square meters. Clusters below this value will be discarded. Default: 0.0
+    tolerance: [5, 20, 1]     # Range of tolerance temperature values '[<start>, <end>, <step size>]' to use when plotting percentage of road that is comprised of high gradients vs gradient tolerance. Default: [5, 20, 1]
+
+- job:
+    title: Example plot of test section                # Mandatory.
+    file_path: /path/in/linux/containing/data_file.txt # Mandatory.
+    reader: voegele_example                            # Mandatory.
+    pixel_width: 0.25                                  # Mandatory.
