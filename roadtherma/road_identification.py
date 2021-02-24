@@ -76,14 +76,21 @@ def estimate_road_length(data, threshold, adjust_left, adjust_right):
 
 
 def _calculate_lane_seperators(pixels, threshold):
+    # mean for each longitudinal line:
     mean_temp = np.mean(pixels, axis=0)
+
+    # Find the first longitudinal mean that is above threshold starting from each edge
     above_thresh = (mean_temp > threshold).astype('int')
     start = len(mean_temp) - len(np.trim_zeros(above_thresh, 'f'))
     end = - (len(mean_temp) - len(np.trim_zeros(above_thresh, 'b')))
+
+    # If there are longitudinal means below temperature threshold in the middle
+    # it is probably because there is a shift in lanes.
     below_thresh = ~ above_thresh.astype('bool')
     if sum(below_thresh[start:end]) == 0:
         return None
     elif sum(below_thresh[start:end]) > 0:
+        # Calculate splitting point between lanes
         (midpoint, ) = np.where(mean_temp[start:end] == min(mean_temp[start:end]))
         midpoint = midpoint[0] + start
     return (start, midpoint, end)

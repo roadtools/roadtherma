@@ -1,19 +1,22 @@
+import copy
+
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import click
 import yaml
 
-from .data import PavementIRData, analyse_ir_data
+from .data import PavementIRData
 from .utils import calculate_velocity, print_overall_stats, print_cluster_stats
 from .plotting import plot_statistics, plot_heatmaps, plot_heatmaps_section, save_figures
 from .clusters import filter_clusters, create_cluster_dataframe
-
+from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
+from .gradient_detection import detect_high_gradient_pixels
 
 matplotlib.rcParams.update({'font.size': 6})
 
 @click.command()
-@click.option('--jobs_file', default="./jobs.yaml", show_default=True, help='location of the job specification file (in YAML format).')
+@click.option('--jobs_file', default="./jobs.yaml", show_default=True, help='path of the job specification file (in YAML format).')
 def script(jobs_file):
     """Command line tool for analysing Pavement IR data.
     See https://github.com/roadtools/roadtherma for documentation on how to use
@@ -29,7 +32,6 @@ def process_job(n, job):
     title = job['title']
     file_path = job['file_path']
     reader = job['reader']
-
     create_plots = job.setdefault('create_plots', True)
     save_figures_ = job.setdefault('save_figures', True)
     print_stats = job.setdefault('print_stats', True)
@@ -40,22 +42,20 @@ def process_job(n, job):
     roadwidth_threshold = job.setdefault('roadwidth_threshold', 80.0)
     roadwidth_adjust_left = job.setdefault('roadwidth_adjust_left', 2)
     roadwidth_adjust_right = job.setdefault('roadwidth_adjust_right', 2)
-    #adjust_npixel = job.setdefault('adjust_npixel', 2)
     gradient_tolerance = job.setdefault('gradient_tolerance', 10.0)
     cluster_npixels = job.setdefault('cluster_npixels', 0)
     cluster_sqm = job.setdefault('cluster_sqm', 0.0)
     tolerance = job.setdefault('tolerance', [5, 20, 1])
 
-    tolerances = np.arange(*job['tolerance'])
-
     print('Processing data file #{} - {}'.format(n, title))
     print('Path: {}'.format(file_path))
     data_raw = PavementIRData(title, file_path, reader, pixel_width)
-    data = analyse_ir_data(
-            data_raw, autotrim_temperature, autotrim_percentage, lane_threshold,
-            roadwidth_threshold, roadwidth_adjust_left, roadwidth_adjust_right,
-            gradient_tolerance
-            )
+
+    data = copy.deepcopy(data_raw)
+    trim_temperature_data(data, autotrim_temperature, autotrim_percentage)
+    detect_paving_lanes(data, lane_threshold, select='warmest')
+    estimate_road_length(data, roadwidth_threshold, roadwidth_adjust_left, roadwidth_adjust_right)
+    detect_high_gradient_pixels(data, gradient_tolerance, True)
 
     if print_stats:
         create_cluster_dataframe(data)
@@ -65,6 +65,7 @@ def process_job(n, job):
         print_cluster_stats(data)
 
     if create_plots:
+        tolerances = np.arange(*job['tolerance'])
         fig_stats = plot_statistics(title, data, tolerances)
         fig_heatmaps = plot_heatmaps(title, data, data_raw)
         # This requires manual setting of index parameters.
