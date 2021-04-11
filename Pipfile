@@ -8,13 +8,14 @@ ipython = "*"
 pyyaml = "*"
 numpy = "*"
 networkx = "*"
-pytest = "*"
 pandas = "*"
 matplotlib = "*"
 click = "*"
 seaborn = "*"
 
 [dev-packages]
+pytest = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.8"

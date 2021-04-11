@@ -6,6 +6,29 @@ tol_start, tol_end = (5, 15)
 tolerances = np.arange(tol_start, tol_end, TOLERANCE_RANGE_STEP)
 
 
+def detect_temperature_difference(data, percentage=90, window_meters=100):
+    """
+    Returns a boolean array the same size as the temperature data, identifying all pixels
+    with a temperature `percentage` lower than the moving average.
+    The mo
+    """
+    temperature_values = data.temperatures.values
+    moving_average = _calc_moving_average(data, window_meters)
+    moving_average_values = np.tile(moving_average.values, (temperature_values.shape[1], 1)).T
+    ratio = percentage / 100
+    data.moving_average_pixels = temperature_values < (ratio * moving_average_values)
+
+
+def _calc_moving_average(data, window_meters):
+    window = round(window_meters / data.longitudinal_resolution)
+    df = data.temperatures
+    df.values[~ data.road_pixels] = 'NaN'
+    min_periods = int(window / 2)
+    df_avg = df.rolling(window, center=True, min_periods=min_periods).mean()
+    moving_average = df_avg.mean(axis=1)
+    return moving_average
+
+
 def detect_high_gradient_pixels(data, tolerance, diagonal_adjacency=True):
     """
     Return a boolean array the same size as `df_temperature` indexing all pixels
@@ -35,7 +58,7 @@ def detect_high_gradient_pixels(data, tolerance, diagonal_adjacency=True):
     gradient_graph = _create_gradient_graph(edges)
     clusters_raw = list(_extract_clusters(gradient_graph))
     data.gradient_pixels = gradient_map
-    data.clusters_raw =  clusters_raw
+    data.clusters_raw = clusters_raw
     return data
 
 

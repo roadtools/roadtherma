@@ -14,6 +14,8 @@
     roadwidth_adjust_right: 2 # Additional number of pixels to cut off right edge after estimating road width. Default: 2
     lane_threshold: 110.0     # Threshold temperature used when detecting the paving lane. Default: 110.0
     gradient_tolerance: 10.0  # Tolerance on the temperature difference during temperature gradient detection. Default: 10.0
+    moving_average_window: 100.0 # Windowsize in meter to calculate (centered) moving average. Default 100.0
+    moving_average_percent: 90.0 # Percentage used to detect low temperatures, i.e., road pixels where pixel < "percentage of moving average temperature"
     cluster_npixels: 0        # Minimum amount of pixels in a cluster. Clusters below this value will be discarded. Default: 0
     cluster_sqm: 0.0          # Minimum size of a cluster in square meters. Clusters below this value will be discarded. Default: 0.0
     tolerance: [5, 20, 1]     # Range of tolerance temperature values '[<start>, <end>, <step size>]' to use when plotting percentage of road that is comprised of high gradients vs gradient tolerance. Default: [5, 20, 1]

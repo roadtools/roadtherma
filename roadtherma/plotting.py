@@ -22,12 +22,12 @@ def categorical_heatmap(ax, cat_array, data, labels, aspect='auto', cbar_kws=Non
 
 def aspect_ratio(data):
     nrows, ncols = data.temperatures.values.shape
-    return (data.pixel_width * ncols) / (data.pixel_height * nrows)
+    return (data.transversal_resolution * ncols) / (data.longitudinal_resolution * nrows)
 
 
 def _set_meter_ticks_on_axes(ax, data):
-    format_x = partial(_distance_formatter, width=data.pixel_width)
-    format_y = partial(_distance_formatter, width=data.pixel_height,
+    format_x = partial(_distance_formatter, width=data.transversal_resolution)
+    format_y = partial(_distance_formatter, width=data.longitudinal_resolution,
             integer=True, offset=data.df.distance.iloc[0])
     formatter_x = FuncFormatter(format_x)
     formatter_y = FuncFormatter(format_y)
@@ -45,15 +45,19 @@ def temperature_heatmap(ax, data, aspect='auto', cmap='RdYlGn_r', cbar_kws=None,
     plt.colorbar(mat, ax=ax, **cbar_kws)
 
 
-def create_map_of_analysis_results(data):
+def create_map_of_analysis_results(data, method):
     map_ = data.temperatures.copy()
     map_.values[~ data.road_pixels] = 1
     map_.values[data.road_pixels] = 2
-    map_.values[data.gradient_pixels] = 3
+
+    if method == 'gradient':
+        map_.values[data.gradient_pixels] = 3
+    elif method == 'moving_average':
+        map_.values[data.moving_average_pixels] = 3
     return map_.values
 
 
-def plot_heatmaps(title, data, data_raw):
+def plot_heatmaps(title, data, data_raw, method='gradient'):
     fig_heatmaps, (ax1, ax2, ax3) = plt.subplots(ncols=3)
     fig_heatmaps.subplots_adjust(wspace=0.6)
     #fig_heatmaps.tight_layout()
@@ -71,7 +75,7 @@ def plot_heatmaps(title, data, data_raw):
     ### Plot that shows identified road and high gradient pixels
     ax3.set_title('Estimated high gradients')
     plt.figure(num=fig_heatmaps.number)
-    cat_array = create_map_of_analysis_results(data)
+    cat_array = create_map_of_analysis_results(data, method)
     labels = ['Non-road', 'normal\nroad', 'high\ngradient\nroad']
     categorical_heatmap(ax3, cat_array, data, labels)
     return fig_heatmaps

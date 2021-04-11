@@ -2,18 +2,7 @@ import datetime
 import re
 import pandas as pd
 
-from .gradient_detection import detect_high_gradient_pixels
-
-def print_csv(data):
-    calculate_velocity(data.df)
-    temp, rest = split_temperature_data(data.df)
-    temp = data.temperatures
-    temp.values[~ data.road_pixels] = 1
-    temp.values[data.road_pixels] = 2
-    temp.values[data.gradient_pixels] = 3
-    df = merge_temperature_data(temp, rest)
-    #print(df.columns)
-    #print(df.head())
+from .detections import detect_high_gradient_pixels
 
 
 def print_overall_stats(data):
@@ -103,7 +92,8 @@ def temperature_columns(df):
             temperature_columns.append(column)
     return temperature_columns
 
-is_temperature = re.compile('T\d+')
+
+is_temperature = re.compile(r'T\d+')
 
 
 def calculate_velocity(df):
@@ -115,8 +105,7 @@ def calculate_velocity(df):
         time_diff = time_diff.astype('int') / (1e9 * 60) # convert [nanosecond] -> [minute]
         df['velocity'] = dist_diff / time_diff # [meter / minute]
         return True
-    else:
-        return False
+    return False
 
 
 def calculate_tolerance_vs_percentage_high_gradient(data, tolerances):

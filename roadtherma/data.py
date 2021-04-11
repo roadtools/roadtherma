@@ -3,7 +3,6 @@ import pickle
 from . import readers
 from .utils import split_temperature_data
 from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
-from .gradient_detection import detect_high_gradient_pixels
 
 _readers = {
         'voegele_example':readers._read_vogele_example,
@@ -17,11 +16,15 @@ _readers = {
 
 
 class PavementIRData:
-    def __init__(self, title, filepath, reader, pixel_width):
+    offsets = None
+    road_pixels = None
+    gradient_pixels = None
+
+    def __init__(self, title, filepath, reader, transversal_resolution):
         self.title = title
         self.filepath = filepath
         self.reader = reader
-        self.pixel_width = pixel_width
+        self.transversal_resolution = transversal_resolution
         self.df = _readers[reader](filepath)
 
     @classmethod
@@ -51,17 +54,16 @@ class PavementIRData:
         return df_temperature
 
     @property
-    def pixel_height(self):
+    def longitudinal_resolution(self):
         t = self.df.distance.diff().describe()
-        pixel_height = t['50%']
-        return pixel_height
+        longitudinal_resolution = t['50%']
+        return longitudinal_resolution
 
     @property
     def mean_velocity(self):
         if 'velocity' in self.df.columns:
             return self.df.velocity.mean()
-        else:
-            return 'N/A'
+        return 'N/A'
 
     @property
     def nroad_pixels(self):

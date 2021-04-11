@@ -8,7 +8,7 @@ def create_cluster_dataframe(data):
         'size_npixel':clusters_npixel,
         'coordinates':clusters
         })
-    pixel_area = data.pixel_width * data.pixel_height
+    pixel_area = data.transversal_resolution * data.longitudinal_resolution
     df['size_m^2'] = df.size_npixel * pixel_area
     df['center_pixel'] = df['coordinates'].apply(_cluster_center)
     df['center_gps'] = df.apply(_center_gps, axis=1, args=(data,))
