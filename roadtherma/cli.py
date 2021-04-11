@@ -7,7 +7,8 @@ import click
 import yaml
 
 from .data import PavementIRData
-from .utils import calculate_velocity, print_overall_stats, print_cluster_stats
+from .utils import calculate_velocity
+from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_csv
 from .plotting import plot_statistics, plot_heatmaps, save_figures #, plot_heatmaps_sections
 from .clusters import filter_clusters, create_cluster_dataframe
 from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
@@ -35,6 +36,7 @@ def process_job(n, job):
     title = job['title']
     file_path = job['file_path']
     reader = job['reader']
+    create_plots = job.setdefault('pixel_width', 0.25)
     create_plots = job.setdefault('create_plots', True)
     save_figures_ = job.setdefault('save_figures', True)
     print_stats = job.setdefault('print_stats', True)
@@ -59,8 +61,7 @@ def process_job(n, job):
     data = copy.deepcopy(data_raw)
     trim_temperature_data(data, autotrim_temperature, autotrim_percentage)
     detect_paving_lanes(data, lane_threshold, select='warmest')
-    estimate_road_length(data, roadwidth_threshold,
-                         roadwidth_adjust_left, roadwidth_adjust_right)
+    estimate_road_length(data, roadwidth_threshold, roadwidth_adjust_left, roadwidth_adjust_right)
     detect_high_gradient_pixels(data, gradient_tolerance, True)
     detect_temperature_difference(data, percentage=moving_average_percent, window_meters=moving_average_window)
 
@@ -68,8 +69,11 @@ def process_job(n, job):
         create_cluster_dataframe(data)
         filter_clusters(data, npixels=cluster_npixels, sqm=cluster_sqm)
         calculate_velocity(data.df)
-        print_overall_stats(data)
-        print_cluster_stats(data)
+        temperature_to_csv(file_path, data.df, data.road_pixels)
+        detections_to_csv(file_path, data.df, data.road_pixels, data.moving_average_pixels)
+        temperature_mean_to_csv(file_path, data.df, data.road_pixels)
+        #print_overall_stats(data)
+        #print_cluster_stats(data)
 
     if create_plots:
         tolerances = np.arange(*tolerance)

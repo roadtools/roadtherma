@@ -1,19 +1,8 @@
 import pickle
 
-from . import readers
+from .readers import readers
 from .utils import split_temperature_data
 from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
-
-_readers = {
-        'voegele_example':readers._read_vogele_example,
-        'voegele_M119':readers._read_vogele_M119,
-        'voegele_M30':readers._read_vogele_M30,
-        'voegele_taulov':readers._read_vogele_taulov,
-        'TF_old':readers._read_TF_old,
-        'TF_new':readers._read_TF_new,
-        'moba':readers._read_moba,
-        }
-
 
 class PavementIRData:
     offsets = None
@@ -25,7 +14,7 @@ class PavementIRData:
         self.filepath = filepath
         self.reader = reader
         self.transversal_resolution = transversal_resolution
-        self.df = _readers[reader](filepath)
+        self.df = readers[reader](filepath)
 
     @classmethod
     def from_file(cls, filepath):

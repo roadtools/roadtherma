@@ -6,7 +6,6 @@ import pandas as pd
 temperatures_voegele = ['T{}'.format(n) for n in range(52)]
 VOEGELE_BASE_COLUMNS = ['time', 'distance', 'latitude', 'longitude']
 
-
 def _convert_vogele_timestamps(df, formatting):
     df['time'] = pd.to_datetime(df.time, format=formatting)
 
@@ -109,7 +108,7 @@ def _rows_moba(filename):
 def _read_moba(filename):
     with open(filename, newline='') as f:
         csv_reader = csv.reader(f)
-        csv_headings = next(csv_reader)
+        _csv_headings = next(csv_reader)
         first_line = next(csv_reader)
 
     date = first_line[1].split(' ')
@@ -139,3 +138,14 @@ def _read_moba(filename):
     df[temperatures_MOBA]=df[temperatures_MOBA].apply(pd.to_numeric, errors='coerce', axis=1).fillna(0, downcast='infer')
     df = df.drop(labels=temperatures_MOBA[-1], axis=1)
     return df
+
+
+readers = {
+        'voegele_example':_read_vogele_example,
+        'voegele_M119':_read_vogele_M119,
+        'voegele_M30':_read_vogele_M30,
+        'voegele_taulov':_read_vogele_taulov,
+        'TF_old':_read_TF_old,
+        'TF_new':_read_TF_new,
+        'moba':_read_moba,
+        }

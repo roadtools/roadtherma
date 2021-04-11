@@ -15,7 +15,7 @@ def categorical_heatmap(ax, cat_array, data, labels, aspect='auto', cbar_kws=Non
     _set_meter_ticks_on_axes(ax, data)
     # set limits .5 outside true range
     mat = ax.imshow(cat_array, aspect=aspect, vmin=np.min(cat_array)-.5, vmax=np.max(cat_array)+.5, cmap=cmap)
-    #tell the colorbar to tick at integers
+    # tell the colorbar to tick at integers
     cbar = plt.colorbar(mat, ax=ax, ticks=np.arange(np.min(cat_array),np.max(cat_array) + 1), **cbar_kws)
     cbar.set_ticklabels(labels)
 
@@ -36,7 +36,7 @@ def _set_meter_ticks_on_axes(ax, data):
     ax.set_xlabel('Width [m]')
 
 
-def temperature_heatmap(ax, data, aspect='auto', cmap='RdYlGn_r', cbar_kws=None, **kwargs):
+def temperature_heatmap(ax, data, aspect='auto', cmap='RdYlGn_r', cbar_kws=None):
     """Make a heatmap of the temperature columns in the dataframe."""
     if cbar_kws is None:
         cbar_kws = dict()
@@ -57,10 +57,9 @@ def create_map_of_analysis_results(data, method):
     return map_.values
 
 
-def plot_heatmaps(title, data, data_raw, method='gradient'):
+def plot_heatmaps(title, data, data_raw, method):
     fig_heatmaps, (ax1, ax2, ax3) = plt.subplots(ncols=3)
     fig_heatmaps.subplots_adjust(wspace=0.6)
-    #fig_heatmaps.tight_layout()
     fig_heatmaps.suptitle(title)
 
     ### Plot the raw data
@@ -81,16 +80,15 @@ def plot_heatmaps(title, data, data_raw, method='gradient'):
     return fig_heatmaps
 
 
-def _distance_formatter(x, pos, width, offset=None, integer=False):
+def _distance_formatter(x, _pos, width, offset=None, integer=False):
     if offset is None:
         offset = 0
     if integer:
         return '{}'.format(int(round(x*width + offset)))
-    else:
-        return '{:.1f}'.format(x*width + offset)
+    return '{:.1f}'.format(x*width + offset)
 
 
-def plot_heatmaps_section(title, data):
+def plot_heatmaps_section(title, data, method):
     data.resize(1000, 1100)
     aspect = aspect_ratio(data)
     fig_heatmaps, (ax1, ax2) = plt.subplots(ncols=2)
@@ -103,14 +101,14 @@ def plot_heatmaps_section(title, data):
 
     ### Plot that shows identified road and high gradient pixels
     ax2.set_title('Estimated high gradients')
-    cat_array = create_map_of_analysis_results(data)
+    cat_array = create_map_of_analysis_results(data, method)
     labels = ['Non-road', 'normal\nroad', 'high\ngradient\nroad']
     categorical_heatmap(ax2, cat_array, data, labels, aspect=aspect, cbar_kws={'shrink':0.7})
     return fig_heatmaps
 
 
 def plot_single_cluster(data, cluster_no):
-    fig_heatmaps, ax = plt.subplots(ncols=1)
+    _fig, ax = plt.subplots(ncols=1)
     cat_array = data.temperatures.copy().values
     cat_array[~ data.road_pixels] = 1
     cat_array[data.road_pixels] = 2

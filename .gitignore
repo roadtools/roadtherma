@@ -1,7 +1,7 @@
 __pycache__
 *.egg-info
 vim*
-TODO
+TODO.md
 drd_data.yaml
 notes_*
 data/

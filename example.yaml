@@ -2,7 +2,7 @@
 - job:
     title: Example plot of test section         # String used as title in the figures created. Mandatory. 
     file_path: /path/in/linux/for/data_file.txt # Path of the data file to process. Mandatory.
-    reader: voegele_example                     # Parser used when loading data file. Possible parsers: "TF", "voegele_taulov", "voegele_example" or "voegele_M119".
+    reader: voegele_example                     # Parser used when loading data file. Possible parsers: "TF", "voegele_taulov", "voegele_example" or "voegele_M119". Mandatory.
     pixel_width: 0.25                           # Resolution (in meters) of pixels in the transversal direction (the horizontal resolution is derived from the chainage data).
     create_plots: True        # Whether or not to create plots. Default: True
     save_figures: True        # Whether or not to save the generated plots as png-files instead of showing them. Default: True
@@ -24,4 +24,3 @@
     title: Example plot of test section                # Mandatory.
     file_path: /path/in/linux/containing/data_file.txt # Mandatory.
     reader: voegele_example                            # Mandatory.
-    pixel_width: 0.25                                  # Mandatory.

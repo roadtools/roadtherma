@@ -34,7 +34,7 @@ def detect_paving_lanes(data, threshold, select='warmest'):
         from the surroundings. This means that the temperature should be sensitive
         enough to detect the coldest lane.
     :param str select: Lane selection method. `'warmest'` selects the lane with the
-        highest mean temperature and `'lowest'` selects the lane lowest temperature.
+        highest mean temperature and `'coldest'` selects the lane lowest temperature.
     :return int: Number of lanes detected. This can be either 1 or 2.
     """
     df = data.df.copy(deep=True)
@@ -139,9 +139,9 @@ def _trim(df, column, threshold_temp, autotrim_percentage):
     above_threshold_pct = 100 * (above_threshold / len(df))
     if above_threshold_pct > autotrim_percentage:
         return False
-    else:
-        del df[column]
-        return True
+
+    del df[column]
+    return True
 
 
 def _estimate_road_edge_right(line, threshold):
