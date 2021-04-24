@@ -1,7 +1,11 @@
 import re
 import pandas as pd
 
-from .detections import detect_high_gradient_pixels
+
+def longitudinal_resolution(distance):
+    t = distance.diff().describe()
+    longitudinal_resolution = t['50%']
+    return longitudinal_resolution
 
 
 def split_temperature_data(df):
@@ -49,11 +53,3 @@ def calculate_velocity(df):
         df['velocity'] = dist_diff / time_diff # [meter / minute]
         return True
     return False
-
-
-def calculate_tolerance_vs_percentage_high_gradient(data, tolerances):
-    percentage_high_gradients = list()
-    for tolerance in tolerances:
-        detect_high_gradient_pixels(data, tolerance)
-        percentage_high_gradients.append((data.gradient_pixels.sum() / data.nroad_pixels) * 100)
-    return percentage_high_gradients

@@ -1,43 +1,42 @@
 import numpy as np
 import pandas as pd
 
-def create_cluster_dataframe(data):
-    clusters_npixel = np.array([len(cluster) for cluster in data.clusters_raw])
-    clusters = [np.array(cluster) for cluster in data.clusters_raw]
+from .utils import longitudinal_resolution
+
+def create_cluster_dataframe(pixel_temperatures, clusters_raw, metadata, pixelwidth):
+    clusters_npixel = np.array([len(cluster) for cluster in clusters_raw])
+    clusters = [np.array(cluster) for cluster in clusters_raw]
     df = pd.DataFrame.from_dict({
         'size_npixel':clusters_npixel,
         'coordinates':clusters
         })
-    pixel_area = data.transversal_resolution * data.longitudinal_resolution
+    pixel_area = pixelwidth * longitudinal_resolution(metadata.distance)
     df['size_m^2'] = df.size_npixel * pixel_area
     df['center_pixel'] = df['coordinates'].apply(_cluster_center)
-    df['center_gps'] = df.apply(_center_gps, axis=1, args=(data,))
-    df['center_chainage'] = df.apply(_center_chainage, axis=1, args=(data,))
-    df['start_time'] = df.apply(_start_time, axis=1, args=(data.df.time,))
-    df['end_time'] = df.apply(_end_time, axis=1, args=(data.df.time,))
-    df['mean_temperature'] = df.apply(_mean_cluster_temperature, axis=1, args=(data.temperatures.values,))
-    data.clusters = df
-    return data
+    df['center_gps'] = df.apply(_center_gps, axis=1, args=(metadata,))
+    df['center_chainage'] = df.apply(_center_chainage, axis=1, args=(metadata,))
+    df['start_time'] = df.apply(_start_time, axis=1, args=(metadata.time,))
+    df['end_time'] = df.apply(_end_time, axis=1, args=(metadata.time,))
+    df['mean_temperature'] = df.apply(_mean_cluster_temperature, axis=1, args=(pixel_temperatures,))
+    return df
 
 
-def filter_clusters(data, sqm=None, npixels=None):
-    df = data.clusters
+def filter_clusters(clusters, gradient_pixels, sqm=None, npixels=None):
+    df = clusters
     if sqm is not None:
         df = df[df['size_m^2'] >= sqm]
     if npixels is not None:
         df = df[df['size_npixel'] >= npixels]
-    data.clusters = df.copy()
+    clusters = df.copy()
 
     # rebuild gradient_map based on the (possibly) reduced set of clusters
-    gradient_pixels = np.zeros(data.gradient_pixels.shape, dtype='bool')
-    clusters_raw = []
-    for idx, cluster in data.clusters.iterrows():
+    gradient_pixels_new = np.zeros(gradient_pixels.shape, dtype='bool')
+    clusters_raw_new = []
+    for _idx, cluster in clusters.iterrows():
         coords = cluster.coordinates
-        gradient_pixels[coords[:, 0], coords[:, 1]] = 1
-        clusters_raw.append(coords.tolist())
-    data.gradient_pixels = gradient_pixels
-    data.clusters_raw = clusters_raw
-    return data
+        gradient_pixels_new[coords[:, 0], coords[:, 1]] = 1
+        clusters_raw_new.append(coords.tolist())
+    return gradient_pixels_new, clusters_raw_new
 
 
 def _mean_cluster_temperature(cluster, temperature_map):
@@ -48,16 +47,16 @@ def _mean_cluster_temperature(cluster, temperature_map):
     return np.mean(temperatures)
 
 
-def _center_gps(row, data):
+def _center_gps(row, metadata):
     idx, _ = row.center_pixel
-    longitude = data.df.longitude.values[idx]
-    latitude = data.df.latitude.values[idx]
+    longitude = metadata.longitude.values[idx]
+    latitude = metadata.latitude.values[idx]
     return (longitude, latitude)
 
 
-def _center_chainage(row, data):
+def _center_chainage(row, metadata):
     idx, _ = row.center_pixel
-    chainage = data.df.distance.values[idx]
+    chainage = metadata.distance[idx]
     return chainage
 
 

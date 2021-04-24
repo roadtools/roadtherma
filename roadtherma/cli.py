@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 import click
 import yaml
 
-from .data import PavementIRData
-from .utils import calculate_velocity
+from .config import ConfigState
+from .data import load_data, create_road_pixels, create_trimming_result_pixels, create_detect_result_pixels
+from .utils import calculate_velocity, split_temperature_data
 from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_csv
 from .plotting import plot_statistics, plot_heatmaps, save_figures #, plot_heatmaps_sections
 from .clusters import filter_clusters, create_cluster_dataframe
-from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
+from .road_identification import trim_temperature_data, estimate_road_width, detect_paving_lanes
 from .detections import detect_high_gradient_pixels, detect_temperature_difference
 
 matplotlib.rcParams.update({'font.size': 6})
@@ -28,72 +29,178 @@ def script(jobs_file):
     with open(jobs_file) as f:
         jobs_yaml = f.read()
     jobs = yaml.load(jobs_yaml, Loader=yaml.FullLoader)
+    config_state = ConfigState()
     for n, item in enumerate(jobs):
-        process_job(n, item['job'])
+        config = config_state.update(item['job'])
+        process_job(n, config)
 
 
-def process_job(n, job):
-    title = job['title']
-    file_path = job['file_path']
-    reader = job['reader']
-    create_plots = job.setdefault('pixel_width', 0.25)
-    create_plots = job.setdefault('create_plots', True)
-    save_figures_ = job.setdefault('save_figures', True)
-    print_stats = job.setdefault('print_stats', True)
-    transversal_resolution = job.setdefault('transversal_resolution', 0.25)
-    autotrim_temperature = job.setdefault('autotrim_temperature', 80.0)
-    autotrim_percentage = job.setdefault('autotrim_percentage', 0.2)
-    lane_threshold = job.setdefault('lane_threshold', 110.0)
-    roadwidth_threshold = job.setdefault('roadwidth_threshold', 80.0)
-    roadwidth_adjust_left = job.setdefault('roadwidth_adjust_left', 2)
-    roadwidth_adjust_right = job.setdefault('roadwidth_adjust_right', 2)
-    gradient_tolerance = job.setdefault('gradient_tolerance', 10.0)
-    moving_average_window = job.setdefault('moving_average_window', 100.0)
-    moving_average_percent = job.setdefault('moving_average_percent', 90.0)
-    cluster_npixels = job.setdefault('cluster_npixels', 0)
-    cluster_sqm = job.setdefault('cluster_sqm', 0.0)
-    tolerance = job.setdefault('tolerance', [5, 20, 1])
+def process_job(n, config):
+    title = config['title']
+    file_path = config['file_path']
+
+    tol_start, tol_end, tol_step = config['tolerance']
+    tolerances = np.arange(tol_start, tol_end, tol_step)
 
     print('Processing data file #{} - {}'.format(n, title))
     print('Path: {}'.format(file_path))
-    data_raw = PavementIRData(title, file_path, reader, transversal_resolution)
+    df = load_data(file_path, config['reader'])
+    temperatures, metadata = split_temperature_data(df)
+    temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(temperatures, config)
 
-    data = copy.deepcopy(data_raw)
-    trim_temperature_data(data, autotrim_temperature, autotrim_percentage)
-    detect_paving_lanes(data, lane_threshold, select='warmest')
-    estimate_road_length(data, roadwidth_threshold, roadwidth_adjust_left, roadwidth_adjust_right)
-    detect_high_gradient_pixels(data, gradient_tolerance, True)
-    detect_temperature_difference(data, percentage=moving_average_percent, window_meters=moving_average_window)
+    # Initial trimming of the dataset
+    ## Plot the data trimming and road identifcation results
+    titles = {
+        'main': title,
+        'temperature_title': "raw temperature data",
+        'category_title': "road detection results"
+    }
+    categories = ['non-road', 'road'] #, 'roller']
+    pixel_category = create_trimming_result_pixels(
+        temperatures.values,
+        trim_result,
+        lane_result[config['lane_to_use']],
+        roadwidths
+    )
+    fig_cleanup = plot_heatmaps(
+        titles,
+        metadata,
+        config['transversal_resolution'],
+        temperatures.values,
+        pixel_category,
+        categories
+    )
+    # plt.show()
 
-    if print_stats:
-        create_cluster_dataframe(data)
-        filter_clusters(data, npixels=cluster_npixels, sqm=cluster_sqm)
-        calculate_velocity(data.df)
-        temperature_to_csv(file_path, data.df, data.road_pixels)
-        detections_to_csv(file_path, data.df, data.road_pixels, data.moving_average_pixels)
-        temperature_mean_to_csv(file_path, data.df, data.road_pixels)
+
+    ## Perform weakness detection using the two methods
+    gradient_pixels, clusters_raw = detect_high_gradient_pixels(
+        temperatures_trimmed.values,
+        roadwidths,
+        config['gradient_tolerance'],
+        diagonal_adjacency=True
+    )
+    road_pixels = create_road_pixels(temperatures_trimmed.values, roadwidths)
+    moving_average_pixels = detect_temperature_difference(
+        temperatures_trimmed,
+        road_pixels,
+        metadata,
+        percentage=config['moving_average_percent'],
+        window_meters=config['moving_average_window']
+    )
+
+
+    ## Plot the detection results along with the trimmed temperature data
+    # FIXME, using moving_average now. Should be configurable
+    titles = {
+        'main': title,
+        'temperature_title': "result of moving average detection",
+        'category_title': "moving average detection results"
+    }
+    categories = ['non-road', 'road', 'detections']
+    pixel_temperatures = temperatures_trimmed.values
+    pixel_category = create_detect_result_pixels(
+        pixel_temperatures,
+        road_pixels,
+        moving_average_pixels
+    )
+    fig_detections = plot_heatmaps(
+        titles,
+        metadata,
+        config['transversal_resolution'],
+        pixel_temperatures,
+        pixel_category,
+        categories
+    )
+
+    # Plot statistics in relating to the gradient detection algorithm
+    fig_stats = plot_statistics(
+        title,
+        temperatures_trimmed,
+        roadwidths,
+        road_pixels,
+        tolerances
+    )
+    plt.show()
+
+    if config['write_csv']:
+        temperature_to_csv(file_path, temperatures_trimmed, metadata, road_pixels)
+        detections_to_csv(file_path, temperatures_trimmed, metadata, road_pixels, moving_average_pixels)
+        temperature_mean_to_csv(file_path, temperatures_trimmed, road_pixels)
+
+    if config['print_stats']:
+        clusters = create_cluster_dataframe(
+            pixel_temperatures,
+            clusters_raw,
+            metadata,
+            config['transversal_resolution']
+        )
+        filter_clusters(
+            clusters,
+            gradient_pixels,
+            npixels=config['cluster_npixels'],
+            sqm=config['cluster_sqm']
+        )
+        calculate_velocity(metadata)
         #print_overall_stats(data)
         #print_cluster_stats(data)
 
-    if create_plots:
-        tolerances = np.arange(*tolerance)
-        fig_stats = plot_statistics(title, data, tolerances)
-        fig_heatmaps = plot_heatmaps(title, data, data_raw, method='moving_average')
-        # This requires manual setting of index parameters.
-        # fig_heatmaps_section = plot_heatmaps_section(title, data)
-        figures = {
-            'fig_heatmaps': fig_heatmaps,
-            # 'fig_heatmaps_section':fig_heatmaps_section,
-            'fig_stats': fig_stats
-        }
 
-        if save_figures_:
-            save_figures(figures, n)
-        else:
-            plt.show()
-        for fig in figures.values():
-            plt.close(fig)
-    return data, data_raw
+    # Save plots
+    figures = {
+        'fig_cleanup': fig_cleanup,
+        'fig_detections': fig_detections,
+        'fig_stats': fig_stats
+    }
+
+    if config['save_figures']:
+        save_figures(figures, n)
+    else:
+        plt.show()
+
+    for fig in figures.values():
+        plt.close(fig)
+
+
+def clean_data(temperatures, config):
+    trim_result = trim_temperature_data(
+        temperatures.values,
+        config['autotrim_temperature'],
+        config['autotrim_percentage']
+    )
+    column_start, column_end, row_start, row_end = trim_result
+    temperatures_trimmed = temperatures.iloc[row_start:row_end, column_start:column_end]
+
+    lane_result = detect_paving_lanes(
+        temperatures_trimmed,
+        config['lane_threshold']
+    )
+    lane_start, lane_end = lane_result[config['lane_to_use']]
+
+
+    temperatures_trimmed = temperatures_trimmed.iloc[:, lane_start:lane_end]
+
+    roadwidths = estimate_road_width(
+        temperatures_trimmed.values,
+        config['roadwidth_threshold'],
+        config['roadwidth_adjust_left'],
+        config['roadwidth_adjust_right']
+    )
+    return temperatures_trimmed, trim_result, lane_result, roadwidths
+
+
+def _iter_segments(df, df_raw, segment_width):
+    start = df_raw.distance.min()
+    distance_max = df_raw.distance.max()
+    while True:
+        end = start + segment_width
+        df_section = df[start <= df.distance & df.distance < end].copy()
+        df_raw_section = df_raw[start <= df_raw.distance & df_raw.distance < end].copy()
+        yield df_raw_section, df_section
+        if end >= distance_max:
+            break
+
+        start = end
 
 
 if __name__ == '__main__':

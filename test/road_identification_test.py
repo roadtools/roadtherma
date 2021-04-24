@@ -2,17 +2,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from roadtherma.road_identification import estimate_road_length, detect_paving_lanes
-
-
-class DummyTemperatures:
-    def __init__(self, array):
-        self.values = array
-
-
-class DummyData:
-    def __init__(self, array):
-        self.temperatures = DummyTemperatures(array)
+from roadtherma.road_identification import estimate_road_width, detect_paving_lanes
+from roadtherma.data import create_road_pixels
 
 
 class TestRoadWidthDetection(unittest.TestCase):
@@ -26,11 +17,12 @@ class TestRoadWidthDetection(unittest.TestCase):
             [9, 9, 9, 9, 0]
             ])
 
-        data = DummyData(pixels)
-        estimate_road_length(data, self.threshold, self.adjust, self.adjust)
-        self.assertEqual(data.offsets, [(1, 5), (0, 4)])
+        roadwidths = estimate_road_width(pixels, self.threshold, self.adjust, self.adjust)
+        self.assertEqual(roadwidths, [(1, 5), (0, 4)])
+
+        road_pixels = create_road_pixels(pixels, roadwidths)
         np.testing.assert_array_equal(
-                data.road_pixels,
+                road_pixels,
                 np.array([
                     [0, 1, 1, 1, 1],
                     [1, 1, 1, 1, 0]
@@ -42,17 +34,21 @@ class TestLaneSelector(unittest.TestCase):
     threshold = 9.5
 
     def _execute_test(self, df, values_verify, columns_verify, nlanes, selector):
-        data = DummyData(None)
-        data.df = df
-        number_of_lanes = detect_paving_lanes(data, self.threshold, select=selector)
-        values_after = data.df.values
-        self.assertEqual(number_of_lanes, nlanes)
+        lane_result = detect_paving_lanes(df, self.threshold)
+
+        if nlanes == 1:
+            assert lane_result['warmest'] == lane_result['coldest']
+        else:
+            assert lane_result['warmest'] != lane_result['coldest']
+
+        lane_start, lane_end = lane_result[selector]
+        df_after = df.iloc[:,lane_start:lane_end]
         self.assertEqual(
                 columns_verify,
-                list(data.df.columns)
+                list(df_after.columns)
                 )
         np.testing.assert_array_equal(
-                values_after,
+                df_after.values,
                 values_verify
                 )
 

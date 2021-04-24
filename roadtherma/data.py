@@ -1,61 +1,35 @@
 import pickle
+import numpy as np
 
 from .readers import readers
 from .utils import split_temperature_data
-from .road_identification import trim_temperature_data, estimate_road_length, detect_paving_lanes
 
-class PavementIRData:
-    offsets = None
-    road_pixels = None
-    gradient_pixels = None
 
-    def __init__(self, title, filepath, reader, transversal_resolution):
-        self.title = title
-        self.filepath = filepath
-        self.reader = reader
-        self.transversal_resolution = transversal_resolution
-        self.df = readers[reader](filepath)
+def load_data(filepath, reader):
+    return readers[reader](filepath)
 
-    @classmethod
-    def from_file(cls, filepath):
-        try:
-            with open(filepath, 'rb') as f:
-                return pickle.load(f)
-        except FileNotFoundError:
-            return None
 
-    def to_file(self, filepath):
-        with open(filepath, 'wb') as f:
-            pickle.dump(self, f)
+def create_trimming_result_pixels(pixels_raw, trim_result, lane_result, roadwidths):
+    pixel_category = np.zeros(pixels_raw.shape, dtype='int')
+    trim_col_start, trim_col_end, trim_row_start, trim_row_end = trim_result
+    lane_start, lane_end = lane_result
+    view = pixel_category[trim_row_start:trim_row_end, trim_col_start:trim_col_end][:, lane_start:lane_end]
 
-    def resize(self, start, end):
-        self.df = self.df[start:end]
-        if self.offsets is not None:
-            self.offsets = self.offsets[start:end]
-        if self.road_pixels is not None:
-            self.road_pixels = self.road_pixels[start:end]
-        if self.gradient_pixels is not None:
-            self.gradient_pixels = self.gradient_pixels[start:end]
+    for longitudinal_idx, (road_start, road_end) in enumerate(roadwidths):
+        view[longitudinal_idx, road_start - 1:road_end + 1] = 1
+    return pixel_category
 
-    @property
-    def temperatures(self):
-        df_temperature, _ = split_temperature_data(self.df)
-        return df_temperature
 
-    @property
-    def longitudinal_resolution(self):
-        t = self.df.distance.diff().describe()
-        longitudinal_resolution = t['50%']
-        return longitudinal_resolution
+def create_road_pixels(pixels_trimmed, roadwidths):
+    road_pixels = np.zeros(pixels_trimmed.shape, dtype='bool')
+    for idx, (road_start, road_end) in enumerate(roadwidths):
+        road_pixels[idx, road_start:road_end] = 1
+    return road_pixels
 
-    @property
-    def mean_velocity(self):
-        if 'velocity' in self.df.columns:
-            return self.df.velocity.mean()
-        return 'N/A'
 
-    @property
-    def nroad_pixels(self):
-        if self.road_pixels is not None:
-            return self.road_pixels.sum()
-        return None
+def create_detect_result_pixels(pixels_trimmed, road_pixels, detection_pixels):
+    pixel_category = np.zeros(pixels_trimmed.shape, dtype='int')
+    pixel_category[~ road_pixels] = 1
+    pixel_category[road_pixels] = 2
+    pixel_category[detection_pixels] = 3
+    return pixel_category
