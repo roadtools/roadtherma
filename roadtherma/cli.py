@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -8,10 +6,10 @@ import yaml
 
 from .config import ConfigState
 from .data import load_data, create_road_pixels, create_trimming_result_pixels, create_detect_result_pixels
-from .utils import calculate_velocity, split_temperature_data
-from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_csv
-from .plotting import plot_statistics, plot_heatmaps, save_figures #, plot_heatmaps_sections
-from .clusters import filter_clusters, create_cluster_dataframe
+from .utils import split_temperature_data
+from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_csv, clusters_to_csv
+from .plotting import plot_statistics, plot_heatmaps, save_figures
+from .clusters import create_cluster_dataframe
 from .road_identification import trim_temperature_data, estimate_road_width, detect_paving_lanes
 from .detections import detect_high_gradient_pixels, detect_temperature_difference
 
@@ -38,6 +36,7 @@ def script(jobs_file):
 def process_job(n, config):
     title = config['title']
     file_path = config['file_path']
+    figures = {}
 
     tol_start, tol_end, tol_step = config['tolerance']
     tolerances = np.arange(tol_start, tol_end, tol_step)
@@ -46,9 +45,11 @@ def process_job(n, config):
     print('Path: {}'.format(file_path))
     df = load_data(file_path, config['reader'])
     temperatures, metadata = split_temperature_data(df)
-    temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(temperatures, config)
 
     # Initial trimming of the dataset
+    temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(temperatures, config)
+    road_pixels = create_road_pixels(temperatures_trimmed.values, roadwidths)
+
     ## Plot the data trimming and road identifcation results
     titles = {
         'main': title,
@@ -62,7 +63,7 @@ def process_job(n, config):
         lane_result[config['lane_to_use']],
         roadwidths
     )
-    fig_cleanup = plot_heatmaps(
+    figures['fig_cleanup'] = plot_heatmaps(
         titles,
         metadata,
         config['transversal_resolution'],
@@ -70,92 +71,44 @@ def process_job(n, config):
         pixel_category,
         categories
     )
-    # plt.show()
 
+    ## Perform and plot moving average detection results along with the trimmed temperature data
+    if config['moving_average_enabled']:
+        moving_average_pixels, figures['moving_average'] = moving_average_detection(
+                config, temperatures_trimmed, road_pixels, metadata)
 
-    ## Perform weakness detection using the two methods
-    gradient_pixels, clusters_raw = detect_high_gradient_pixels(
-        temperatures_trimmed.values,
-        roadwidths,
-        config['gradient_tolerance'],
-        diagonal_adjacency=True
-    )
-    road_pixels = create_road_pixels(temperatures_trimmed.values, roadwidths)
-    moving_average_pixels = detect_temperature_difference(
-        temperatures_trimmed,
-        road_pixels,
-        metadata,
-        percentage=config['moving_average_percent'],
-        window_meters=config['moving_average_window']
-    )
-
-
-    ## Plot the detection results along with the trimmed temperature data
-    # FIXME, using moving_average now. Should be configurable
-    titles = {
-        'main': title,
-        'temperature_title': "result of moving average detection",
-        'category_title': "moving average detection results"
-    }
-    categories = ['non-road', 'road', 'detections']
-    pixel_temperatures = temperatures_trimmed.values
-    pixel_category = create_detect_result_pixels(
-        pixel_temperatures,
-        road_pixels,
-        moving_average_pixels
-    )
-    fig_detections = plot_heatmaps(
-        titles,
-        metadata,
-        config['transversal_resolution'],
-        pixel_temperatures,
-        pixel_category,
-        categories
-    )
+    ## Perform and plot gradient detection results along with the trimmed temperature data
+    if config['gradient_enabled']:
+        clusters_raw, figures['gradient'] = gradient_detection(
+                config, temperatures_trimmed, metadata, road_pixels, roadwidths)
 
     # Plot statistics in relating to the gradient detection algorithm
-    fig_stats = plot_statistics(
+    figures['stats'] = plot_statistics(
         title,
         temperatures_trimmed,
         roadwidths,
         road_pixels,
         tolerances
     )
-    plt.show()
 
     if config['write_csv']:
         temperature_to_csv(file_path, temperatures_trimmed, metadata, road_pixels)
-        detections_to_csv(file_path, temperatures_trimmed, metadata, road_pixels, moving_average_pixels)
+        detections_to_csv(
+                file_path, temperatures_trimmed, metadata, road_pixels, moving_average_pixels)
         temperature_mean_to_csv(file_path, temperatures_trimmed, road_pixels)
-
-    if config['print_stats']:
-        clusters = create_cluster_dataframe(
-            pixel_temperatures,
-            clusters_raw,
-            metadata,
-            config['transversal_resolution']
-        )
-        filter_clusters(
-            clusters,
-            gradient_pixels,
-            npixels=config['cluster_npixels'],
-            sqm=config['cluster_sqm']
-        )
-        calculate_velocity(metadata)
-        #print_overall_stats(data)
-        #print_cluster_stats(data)
-
-
-    # Save plots
-    figures = {
-        'fig_cleanup': fig_cleanup,
-        'fig_detections': fig_detections,
-        'fig_stats': fig_stats
-    }
+        if config['gradient_enabled']:
+            clusters = create_cluster_dataframe(
+                temperatures_trimmed.values,
+                clusters_raw,
+                metadata,
+                config['transversal_resolution']
+            )
+            clusters_to_csv(file_path, clusters)
 
     if config['save_figures']:
         save_figures(figures, n)
-    else:
+
+    if config['show_plots']:
         plt.show()
 
     for fig in figures.values():
@@ -187,6 +140,63 @@ def clean_data(temperatures, config):
         config['roadwidth_adjust_right']
     )
     return temperatures_trimmed, trim_result, lane_result, roadwidths
+
+
+def moving_average_detection(config, temperatures_trimmed, road_pixels, metadata):
+    moving_average_pixels = detect_temperature_difference(
+        temperatures_trimmed,
+        road_pixels,
+        metadata,
+        percentage=config['moving_average_percent'],
+        window_meters=config['moving_average_window']
+    )
+    titles = {
+        'main': config['title'],
+        'temperature_title': "Result of moving average detection",
+        'category_title': "Moving average detection results"
+    }
+    categories = ['non-road', 'road', 'detections']
+    pixel_category = create_detect_result_pixels(
+        temperatures_trimmed.values,
+        road_pixels,
+        moving_average_pixels
+    )
+    return moving_average_pixels, plot_heatmaps(
+        titles,
+        metadata,
+        config['transversal_resolution'],
+        temperatures_trimmed.values,
+        pixel_category,
+        categories
+    )
+
+
+def gradient_detection(config, temperatures_trimmed, metadata, road_pixels, roadwidths):
+    gradient_pixels, clusters_raw = detect_high_gradient_pixels(
+        temperatures_trimmed.values,
+        roadwidths,
+        config['gradient_tolerance'],
+        diagonal_adjacency=True
+    )
+    titles = {
+        'main': config['title'],
+        'temperature_title': "result of gradient detection",
+        'category_title': "gradient detection results"
+    }
+    categories = ['non-road', 'road', 'detections']
+    pixel_category = create_detect_result_pixels(
+        temperatures_trimmed.values,
+        road_pixels,
+        gradient_pixels
+    )
+    return clusters_raw, plot_heatmaps(
+        titles,
+        metadata,
+        config['transversal_resolution'],
+        temperatures_trimmed.values,
+        pixel_category,
+        categories
+    )
 
 
 def _iter_segments(df, df_raw, segment_width):

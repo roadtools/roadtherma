@@ -4,7 +4,7 @@
     file_path: /path/in/linux/for/data_file.txt # Path of the data file to process. Mandatory.
     reader: voegele_example                     # Parser used when loading data file. Possible parsers: "TF", "voegele_taulov", "voegele_example" or "voegele_M119".
     pixel_width: 0.25                           # Resolution (in meters) of pixels in the transversal direction (the horizontal resolution is derived from the chainage data).
-    create_plots: True           # Whether or not to create plots. Default: True
+    show_plots: True             # Whether or not to show plots. Default: True
     save_figures: True           # Whether or not to save the generated plots as png-files instead of showing them. Default: True
     print_stats: True            # Whether or not to print summary statistics for each dataset. Default: True
     write_csv: True              # Whether or not to write csv files for post-analysis. Default: True
@@ -13,9 +13,12 @@
     roadwidth_threshold: 80.0    # Threshold temperature used when estimating the road width. Default: 80.0
     roadwidth_adjust_left: 2     # Additional number of pixels to cut off left edge after estimating road width. Default: 2
     roadwidth_adjust_right: 2    # Additional number of pixels to cut off right edge after estimating road width. Default: 2
+    lane_enabled: True           # Whether or not to try and identify lanes. Default: True
     lane_threshold: 110.0        # Threshold temperature used when detecting the paving lane. Default: 110.0
-    lane_to_use: varmest         # Whether to use the "coldest" or "warmest" lane. Default: "warmest"
+    lane_to_use: varmest         # Whether to use the "coldest" or "warmest" lane for detections. Default: "warmest"
+    gradient_enabled: True       # Whether or not to make detections using the "gradient" method. Default: True
     gradient_tolerance: 10.0     # Tolerance on the temperature difference during temperature gradient detection. Default: 10.0
+    moving_average_enabled: True # Whether or not to make detections using the "moving average" method. Default: True
     moving_average_window: 100.0 # Windowsize in meter to calculate (centered) moving average. Default 100.0
     moving_average_percent: 90.0 # Percentage used to detect low temperatures, i.e., road pixels where pixel < "percentage of moving average temperature"
     cluster_npixels: 0           # Minimum amount of pixels in a cluster. Clusters below this value will be discarded. Default: 0
