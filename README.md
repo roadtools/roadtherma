@@ -1,4 +1,4 @@
-## Analysis tool for thermal road data
+# Analysis tool for thermal road data
 This repository contains code for processing and analysing data from termal
 cameras measured during paving operations. The tool has the following essential
 features:
@@ -7,95 +7,94 @@ features:
 * Detection of clusters with high temperature differences on the identified road.
 * Generation of several statistical measures of the temperature data and paving operation.
 
-*note that this is code is in a very early stage of development*
+## Requirements & Installation
+The roadtherma tool have been developed using python 3.8 but should *in theory*
+also work with python 3.6+. The cli-tool is provided as a python package that
+can be easily installed with `pip`. It is recommended to use pipenv to manage
+dependencies & virtualenvironments. The installation guides below is based on
+unix-based systems but should be almost identical to conda-environment on windows.
 
-### Installation
-On unix-based systems open a terminal and run the following
+### Installing using `pipenv`
+On a unix-based system, open a terminal and run the following in folder of your
+choice
 
 ```
 $ git clone https://github.com/roadtools/roadtherma.git
-$ pip3 install roadtherma
+$ cd roadtherma
+$ pipenv sync
+$ pipenv run pip install ./
 ```
 
-and thats it! You sould now be able to use the CLI tool described below.
+and now you can use the cli-tool as described in the next section, using the
+virtual environment just created by `pipenv sync` above.
 
-### CLI Tool
-The file `pave_analyser.py` is the executable CLI. It can be terminal or
-within IPython or a similar environment. Below is shown how to print the
-help screen containing usage instructions.
+### Installing using `pip`
+```
+$ git clone https://github.com/roadtools/roadtherma.git
+$ pip install -r roadtherma/requirements.txt
+$ pip install  ./roadtherma
+```
+Note that you might have to use root for a system-wide installation.
 
 
-From a terminal:
+## Using the cli-tool
+To verify that roadtherma is installed, run:
+
 ```
 $ roadtherma --help
 ```
 
-From IPython:
-```
-In [21]: !roadtherma --help
-```
-
-This should produce the following text:
+and the following text should appear:
 
 ```
 Usage: roadtherma [OPTIONS]
 
-  Command line tool for analysing Pavement IR data. It assumes that a file
-  './data_files.py' (located where this script is executed) exists and
-  contains a list of tuples named 'data_files' as follows:
-
-      data_files = [
-
-          (title, filepath, reader, width),
-
-          ...,
-
-          ]
-
-  where 'title' is a string used as title in plots, 'filepath' contains the
-  path of the particular data file, 'reader' is name of apropriate parser
-  for that file and can have values "TF", "voegele_taulov",
-  "voegele_example" or "voegele_M119". 'width' is a float containing the
-  resolution in meters of the pixels in the transversal direction (the
-  horizontal resolution is derived from the chainage data). Options to
-  configure the data processing is specified below.
+  Command line tool for analysing Pavement IR data. See
+  https://github.com/roadtools/roadtherma for documentation on how to use
+  this command line tool.
 
 Options:
-  --plots / --no-plots            Whether or not to create plots.  [default:
-                                  True]
-  --cache / --no-cache            Whether or not to use caching. If this is
-                                  enabled and no caching files is found in
-                                  "./.cache" the data will be processed from
-                                  scratch and cached afterwards. The directory
-                                  "./cache" must exist for caching to work.
-                                  [default: True]
-  --savefig / --no-savefig        Wheter or not to save the generated plots as
-                                  png-files.  [default: False]
-  --trim_threshold FLOAT          Temperature threshold for the data trimming
-                                  step.  [default: 80.0]
-  --percentage_above FLOAT        Percentage of data that should be above
-                                  trim_threshold in order for that outer
-                                  longitudinal line to be removed.  [default:
-                                  0.2]
-  --roadwidth_threshold FLOAT     Temperature threshold for the road width
-                                  estimation step.  [default: 80.0]
-  --adjust_npixel INTEGER         Additional number of pixels to cut off edges
-                                  during road width estimation.  [default: 2]
-  --gradient_tolerance FLOAT      Tolerance on the temperature difference
-                                  during temperature gradient detection.
-                                  [default: 10.0]
-  --cluster_threshold_npixels INTEGER
-                                  Minimum amount of pixels that should be in a
-                                  cluster. Clusters below this value will be
-                                  discarded.  [default: 0]
-  --cluster_threshold_sqm FLOAT   Minimum size of a cluster in square meters.
-                                  Clusters below this value will be discarded.
-                                  [default: 0.0]
-  --tolerance_range <INTEGER INTEGER INTEGER>...
-                                  Range of tolerance values (e.g. "--
-                                  tolerance_range <start> <end> <step size>")
-                                  to use when plotting percentage of road that
-                                  is comprised of high gradients vs gradient
-                                  tolerance.  [default: 5, 20, 1]
-  --help                          Show this message and exit.
- ```
+  --jobs_file TEXT  path of the job specification file (in YAML format).
+                    [default: ./jobs.yaml]
+
+  --help            Show this message and exit.
+
+```
+
+When invoked without arguments, the tool tries to open a "job file" 
+at `./jobs.yaml` containing information on the data-files that should
+be processed. An alternative location can be specified using the
+`--jobs_file` flag. The jobfile is a YAML-file that lists one or more
+"jobs". Each job consists of a path to a data-file together with
+specifcations on how to parse the data-file, how to clean/process it, and
+what output should be produced.
+
+If more than one job is specified, each job inherits the
+configuration settings from the previous job, unless explicitly set.
+E.g. in,
+
+```yaml
+---
+- job:
+    title: Example 1 
+    file_path: /path/to/data_file.txt
+    reader: voegele_example
+    write_csv: False # Overwriting the default value
+
+- job:
+    title: Example 2
+    file_path: /path/to/second/data_file.txt
+
+- job:
+    title: Example 3
+    file_path: /path/to/third/data_file.txt
+```
+
+both `Example 2` and `Example 3` will not produce csv-files,
+even though the default behaviour is to do so, because it was
+disabled in the configuration of the first job.
+
+## Configuration parameters
+An example files is given in `example.yaml` at the root of this repo,
+where the first job sets all the configuration parameters to their
+default values together with a short description of its use.
