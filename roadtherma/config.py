@@ -2,6 +2,7 @@ class ConfigState:
     config = {
         'pixel_width': 0.25,
         'show_plots': True,
+        'plotting_segments': 1,
         'create_plots': True,
         'save_figures': True,
         'print_stats': True,

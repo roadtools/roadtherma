@@ -4,6 +4,7 @@
     file_path: /path/in/linux/for/data_file.txt # Path of the data file to process. Mandatory.
     reader: voegele_example                     # Parser used when loading data file. Possible parsers: "TF", "voegele_taulov", "voegele_example" or "voegele_M119".
     pixel_width: 0.25                           # Resolution (in meters) of pixels in the transversal direction (the horizontal resolution is derived from the chainage data).
+    plotting_segments: 1         # Number of segments that the data is partitioned into before being plotted. If set to 1 the entire dataset is plotted into figure (for each plot-type). Default: 1
     show_plots: True             # Whether or not to show plots. Default: True
     save_figures: True           # Whether or not to save the generated plots as png-files instead of showing them. Default: True
     print_stats: True            # Whether or not to print summary statistics for each dataset. Default: True
