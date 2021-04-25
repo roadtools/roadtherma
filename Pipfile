@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-ipython = "*"
 pyyaml = "*"
 numpy = "*"
 networkx = "*"
@@ -14,6 +13,7 @@ click = "*"
 seaborn = "*"
 
 [dev-packages]
+ipython = "*"
 pytest = "*"
 pylint = "*"
 
