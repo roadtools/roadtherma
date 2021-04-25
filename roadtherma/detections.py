@@ -20,6 +20,7 @@ def detect_temperature_difference(temperatures, road_pixels, metadata, percentag
     moving_average_values = np.tile(moving_average.values, (temperature_pixels.shape[1], 1)).T
     ratio = percentage / 100
     moving_average_pixels = temperature_pixels < (ratio * moving_average_values)
+    moving_average_pixels[~ road_pixels] = 0  # non-road pixels are not part of the detection
     return moving_average_pixels
 
 

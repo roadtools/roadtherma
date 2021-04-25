@@ -138,11 +138,9 @@ def clean_data(temperatures, config):
         temperatures_trimmed,
         config['lane_threshold']
     )
+
     lane_start, lane_end = lane_result[config['lane_to_use']]
-
-
     temperatures_trimmed = temperatures_trimmed.iloc[:, lane_start:lane_end]
-
     roadwidths = estimate_road_width(
         temperatures_trimmed.values,
         config['roadwidth_threshold'],
@@ -204,7 +202,6 @@ def _plot_moving_average_detection(moving_average_pixels, config, temperatures_t
 
 
 def _plot_gradient_detection(gradient_pixels, config, temperatures_trimmed, metadata, road_pixels, **_kwargs):
-
     titles = {
         'main': config['title'],
         'temperature_title': "result of gradient detection",

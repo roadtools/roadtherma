@@ -77,10 +77,6 @@ def plot_heatmaps(titles, metadata, transversal_resolution, pixel_temperatures, 
                         metadata.distance, transversal_resolution)
     ax1.set_ylabel('chainage [m]')
 
-    # Plot trimmed data
-    #ax2.set_title('Trimmed data')
-    #temperature_heatmap(ax2, data, **kwargs)
-
     # Plot that shows identified road and high gradient pixels
     ax2.set_title(titles['category_title'])  # 'Estimated high gradients'
     plt.figure(num=fig_heatmaps.number)
