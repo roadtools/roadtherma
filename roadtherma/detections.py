@@ -8,7 +8,7 @@ tol_start, tol_end = (5, 15)
 tolerances = np.arange(tol_start, tol_end, TOLERANCE_RANGE_STEP)
 
 
-def detect_temperature_difference(temperatures, road_pixels, metadata, percentage=90, window_meters=100):
+def detect_temperatures_below_moving_average(temperatures, road_pixels, metadata, percentage=90, window_meters=100):
     """
     Returns a boolean array the same size as the temperature data, identifying all pixels
     with a temperature `percentage` lower than the moving average.
@@ -27,7 +27,7 @@ def detect_temperature_difference(temperatures, road_pixels, metadata, percentag
 def _calc_moving_average(df, road_pixels, window):
     df = df.copy(deep=True)
     df.values[~ road_pixels] = 'NaN'
-    min_periods = int(window / 2)
+    min_periods = int(window * 0.80) # There must be 80% of <window> number of pixels
     df_avg = df.rolling(window, center=True, min_periods=min_periods).mean()
     moving_average = df_avg.mean(axis=1)
     return moving_average

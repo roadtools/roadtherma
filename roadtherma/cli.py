@@ -11,7 +11,7 @@ from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_c
 from .plotting import plot_statistics, plot_heatmaps, save_figures
 from .clusters import create_cluster_dataframe
 from .road_identification import trim_temperature_data, estimate_road_width, detect_paving_lanes
-from .detections import detect_high_gradient_pixels, detect_temperature_difference
+from .detections import detect_high_gradient_pixels, detect_temperatures_below_moving_average
 
 matplotlib.rcParams.update({'font.size': 6})
 
@@ -48,7 +48,7 @@ def process_job(n, config):
     road_pixels = create_road_pixels(temperatures_trimmed.values, roadwidths)
 
     ## Calculating detections
-    moving_average_pixels = detect_temperature_difference(
+    moving_average_pixels = detect_temperatures_below_moving_average(
         temperatures_trimmed,
         road_pixels,
         metadata,

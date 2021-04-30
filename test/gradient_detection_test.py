@@ -1,10 +1,84 @@
 import unittest
 
+import pandas as pd
 import numpy as np
 
 from roadtherma.road_identification import estimate_road_width
-from roadtherma.detections import _detect_longitudinal_gradients, _detect_transversal_gradients, detect_high_gradient_pixels
+from roadtherma.detections import _detect_longitudinal_gradients, _detect_transversal_gradients, detect_high_gradient_pixels, detect_temperatures_below_moving_average
 from roadtherma.data import create_road_pixels
+
+
+class TestMovingAverageDetection(unittest.TestCase):
+    temperatures = pd.DataFrame(np.array([
+        [10, 10,  5],
+        [10,  5, 10],
+        [ 5, 10, 10],
+        [10, 10,  5],
+        ], dtype='float'), columns=['T1', 'T2', 'T3'])
+
+    road_pixels = np.array([
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        ], dtype='bool')
+
+    metadata = pd.DataFrame(np.array([0, 10, 20, 30], dtype='float'), columns=['distance'])
+
+
+    def test_moving_average_just_above_threshold(self):
+        # Moving average array is:
+        # 1    8.333333
+        # 2    8.333333
+        # 3    8.333333
+        # and 8.333333 * 0.61 = 5.083
+        moving_average_pixels = detect_temperatures_below_moving_average(
+                self.temperatures, self.road_pixels, self.metadata, percentage=61, window_meters=30
+                )
+        np.testing.assert_array_equal(
+            moving_average_pixels,
+            np.array([
+                [0, 0, 1],
+                [0, 1, 0],
+                [1, 0, 0],
+                [0, 0, 1],
+            ])
+        )
+
+    def test_moving_average_just_below_threshold(self):
+        moving_average_pixels = detect_temperatures_below_moving_average(
+                self.temperatures, self.road_pixels, self.metadata, percentage=60, window_meters=30
+                )
+        np.testing.assert_array_equal(
+            moving_average_pixels,
+            np.array([
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+            ])
+        )
+
+
+    def test_moving_average_with_nonroad_pixels(self):
+        road_pixels = np.array([
+            [0, 1, 1],
+            [1, 1, 0],
+            [1, 1, 1],
+            [1, 1, 1],
+            ], dtype='bool')
+        moving_average_pixels = detect_temperatures_below_moving_average(
+                self.temperatures, road_pixels, self.metadata, percentage=61, window_meters=30
+                )
+        np.testing.assert_array_equal(
+            moving_average_pixels,
+            np.array([
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 1],
+            ])
+        )
 
 
 class TestGradientDetectionSimpleAdjacency(unittest.TestCase):
