@@ -5,10 +5,10 @@ import click
 import yaml
 
 from .config import ConfigState
-from .data import load_data, create_road_pixels, create_trimming_result_pixels, create_detect_result_pixels
+from .data import load_data, create_road_pixels, create_trimming_result_pixels
 from .utils import split_temperature_data
 from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_csv, clusters_to_csv
-from .plotting import plot_statistics, plot_heatmaps, save_figures
+from .plotting import plot_statistics, plot_detections, plot_cleaning_results, save_figures
 from .clusters import create_cluster_dataframe
 from .road_identification import clean_data
 from .detections import detect_high_gradient_pixels, detect_temperatures_below_moving_average
@@ -126,79 +126,6 @@ def process_job(n, config):
 
     for fig in figures.values():
         plt.close(fig)
-
-
-def plot_detections(k, figures, **kwargs):
-    config = kwargs['config']
-
-    ## Perform and plot moving average detection results along with the trimmed temperature data
-    if config['moving_average_enabled']:
-        figures[f'moving_average{k}'] = _plot_moving_average_detection(**kwargs)
-
-    ## Perform and plot gradient detection results along with the trimmed temperature data
-    if config['gradient_enabled']:
-        figures[f'gradient{k}'] = _plot_gradient_detection(**kwargs)
-
-
-def plot_cleaning_results(config, metadata, temperatures, pixel_category):
-    titles = {
-        'main': config['title'],
-        'temperature_title': "raw temperature data",
-        'category_title': "road detection results"
-    }
-    categories = ['non-road', 'road'] #, 'roller']
-    return plot_heatmaps(
-        titles,
-        metadata,
-        config['transversal_resolution'],
-        temperatures.values,
-        pixel_category,
-        categories
-    )
-
-
-def _plot_moving_average_detection(moving_average_pixels, config, temperatures_trimmed, road_pixels, metadata, **_kwargs):
-    titles = {
-        'main': config['title'],
-        'temperature_title': "Result of moving average detection",
-        'category_title': "Moving average detection results"
-    }
-    categories = ['non-road', 'road', 'detections']
-    pixel_category = create_detect_result_pixels(
-        temperatures_trimmed.values,
-        road_pixels,
-        moving_average_pixels
-    )
-    return plot_heatmaps(
-        titles,
-        metadata,
-        config['transversal_resolution'],
-        temperatures_trimmed.values,
-        pixel_category,
-        categories
-    )
-
-
-def _plot_gradient_detection(gradient_pixels, config, temperatures_trimmed, metadata, road_pixels, **_kwargs):
-    titles = {
-        'main': config['title'],
-        'temperature_title': "result of gradient detection",
-        'category_title': "gradient detection results"
-    }
-    categories = ['non-road', 'road', 'detections']
-    pixel_category = create_detect_result_pixels(
-        temperatures_trimmed.values,
-        road_pixels,
-        gradient_pixels
-    )
-    return plot_heatmaps(
-        titles,
-        metadata,
-        config['transversal_resolution'],
-        temperatures_trimmed.values,
-        pixel_category,
-        categories
-    )
 
 
 def _iter_segments(temperatures, number_of_segments):
