@@ -16,7 +16,7 @@ def create_trimming_result_pixels(pixels_raw, trim_result, lane_result, roadwidt
     view = pixel_category[trim_row_start:trim_row_end, trim_col_start:trim_col_end][:, lane_start:lane_end]
 
     for longitudinal_idx, (road_start, road_end) in enumerate(roadwidths):
-        view[longitudinal_idx, road_start - 1:road_end + 1] = 1
+        view[longitudinal_idx, road_start:road_end] = 1
     return pixel_category
 
 

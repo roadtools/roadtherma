@@ -2,9 +2,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from roadtherma.road_identification import estimate_road_width, detect_paving_lanes
-from roadtherma.data import create_road_pixels
-
+from roadtherma.road_identification import clean_data, estimate_road_width, detect_paving_lanes
+from roadtherma.data import create_road_pixels, create_trimming_result_pixels
 
 class TestRoadWidthDetection(unittest.TestCase):
     threshold = 1.0
@@ -120,3 +119,65 @@ class TestLaneSelector(unittest.TestCase):
             ]).T
         nlanes = 2
         self._execute_test(df, values_verify, columns_verify, nlanes, 'warmest')
+
+
+class TestDataCleaningRegressionTest(unittest.TestCase):
+    """
+    This suite targets trim_temperature_data but is also looking at the result
+    of create_trimming_result_pixels.
+    """
+    config = {
+            'autotrim_temperature': 80,
+            'autotrim_percentage': 25,
+            'lane_threshold': 80,
+            'lane_to_use': 'warmest',
+            'roadwidth_threshold': 80,
+            'roadwidth_adjust_left': 1,
+            'roadwidth_adjust_right': 1,
+            }
+
+    def test_remove_first_and_last_rows(self):
+        temperatures = pd.DataFrame(np.array([
+            [ 0,  0, 99,  0,  0],
+            [99, 99, 99, 99, 99],
+            [ 0, 99,  0,  0,  0],
+            ], dtype='float'), columns=['T1', 'T2', 'T3', 'T4', 'T5'])
+
+        temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(
+                temperatures, self.config)
+
+        assert (0, 5, 1, 2) == trim_result
+        assert [(1, 4)] == roadwidths
+
+        pixel_category = create_trimming_result_pixels(
+                temperatures.values, trim_result, lane_result['warmest'], roadwidths)
+
+        np.testing.assert_array_equal(pixel_category, np.array([
+            [ 0, 0, 0, 0, 0],
+            [ 0, 1, 1, 1, 0],
+            [ 0, 0, 0, 0, 0],
+            ], dtype='int'))
+
+    def test_remove_first_and_last_columns(self):
+        temperatures = pd.DataFrame(np.array([
+            [ 0, 99, 99, 99,  0],
+            [99, 99, 99, 99, 99],
+            [ 0, 99, 99, 99,  0],
+            [ 0, 99, 99, 99,  0],
+            ], dtype='float'), columns=['T1', 'T2', 'T3', 'T4', 'T5'])
+
+        temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(
+                temperatures, self.config)
+
+        assert (1, 4, 0, 4) == trim_result
+        assert [(1, 2), (1, 2), (1, 2), (1, 2)] == roadwidths
+
+        pixel_category = create_trimming_result_pixels(
+                temperatures.values, trim_result, lane_result['warmest'], roadwidths)
+
+        np.testing.assert_array_equal(pixel_category, np.array([
+            [ 0, 0, 1, 0, 0],
+            [ 0, 0, 1, 0, 0],
+            [ 0, 0, 1, 0, 0],
+            [ 0, 0, 1, 0, 0],
+            ], dtype='int'))

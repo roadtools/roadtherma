@@ -2,41 +2,64 @@ import numpy as np
 
 from .utils import split_temperature_data, merge_temperature_data
 
+
+def clean_data(temperatures, config):
+    """
+    Clean and prepare data by running cleaning routines contained in this module, i.e.,
+        - trim_temperature_data
+        - detect_paving_lanes
+        - estimate_road_width
+
+    and return the results of these operations, together with a trimmed version of the
+    temperature data.
+    """
+    trim_result = trim_temperature_data(
+        temperatures.values,
+        config['autotrim_temperature'],
+        config['autotrim_percentage']
+    )
+    column_start, column_end, row_start, row_end = trim_result
+    temperatures_trimmed = temperatures.iloc[row_start:row_end, column_start:column_end]
+
+    lane_result = detect_paving_lanes(
+        temperatures_trimmed,
+        config['lane_threshold']
+    )
+
+    lane_start, lane_end = lane_result[config['lane_to_use']]
+    temperatures_trimmed = temperatures_trimmed.iloc[:, lane_start:lane_end]
+    roadwidths = estimate_road_width(
+        temperatures_trimmed.values,
+        config['roadwidth_threshold'],
+        config['roadwidth_adjust_left'],
+        config['roadwidth_adjust_right']
+    )
+    return temperatures_trimmed, trim_result, lane_result, roadwidths
+
+
 def trim_temperature_data(pixels, threshold, autotrim_percentage):
     """
     Trim the temperature heatmap data by removing all outer rows and columns that only contains
-    `autotrim_percentage` temperature values below `threshold`. The input `data` is modified inplace.
-
-    :param pixels: Temperature heatmap :class:`numpy.ndarray` that should be trimmed.
-    :type data: instance of :class:`.PavementIRData`
-    :param float threshold: Temperature threshold used in data-trimming.
-    :param float autotrim_percentage: Percentage of pixels in a row/column that is allowed to have temperatures
-         above `threshold` and still be discarded.
-    :return: Same as the `data` argument.
+    `autotrim_percentage` temperature values above `threshold`.
     """
     column_start, column_end = _trim_temperature_columns(pixels, threshold, autotrim_percentage)
     row_start, row_end = _trim_temperature_columns(pixels.T, threshold, autotrim_percentage)
-    # df = merge_temperature_data(df_temperature.iloc[row_start:row_end, column_start:column_end], df_rest)
     return column_start, column_end, row_start, row_end
 
 
 def _trim_temperature_columns(pixels, threshold, autotrim_percentage):
-    pixel_start = 0
-    pixel_end = -1
-
     for idx in range(pixels.shape[1]):
+        pixel_start = idx
         if not _trim(pixels, idx, threshold, autotrim_percentage):
             break
 
-        pixel_start = idx
 
     for idx in reversed(range(pixels.shape[1])):
+        pixel_end = idx
         if not _trim(pixels, idx, threshold, autotrim_percentage):
             break
 
-        pixel_end = idx
-
-    return pixel_start, pixel_end
+    return pixel_start, pixel_end + 1 # because this is used in slicing so we need to adjust
 
 
 def _trim(pixels, column, threshold_temp, autotrim_percentage):
@@ -53,13 +76,6 @@ def detect_paving_lanes(df, threshold):
     Detect lanes the one that is being actively paved during a two-lane paving operation where
     the lane that is not being paved during data acquisition has been recently paved and thus
     having a higher temperature compared to the surroundings.
-
-    :param df: Pavement data :class:`pd.DataFrame` with lanes to detect.
-    :type data: instance of :class:`.PavementIRData`
-    :param float threshold: Temperature threshold used to detect both lanes
-        from the surroundings. This means that the temperature should be sensitive
-        enough to detect the coldest lane.
-    :return: "N"umber of lanes detected. This can be either 1 or 2.
     """
     df = df.copy(deep=True)
     df_temperature, _df_rest = split_temperature_data(df)

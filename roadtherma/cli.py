@@ -10,7 +10,7 @@ from .utils import split_temperature_data
 from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_csv, clusters_to_csv
 from .plotting import plot_statistics, plot_heatmaps, save_figures
 from .clusters import create_cluster_dataframe
-from .road_identification import trim_temperature_data, estimate_road_width, detect_paving_lanes
+from .road_identification import clean_data
 from .detections import detect_high_gradient_pixels, detect_temperatures_below_moving_average
 
 matplotlib.rcParams.update({'font.size': 6})
@@ -46,6 +46,7 @@ def process_job(n, config):
     ## Initial trimming of the dataset
     temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(temperatures, config)
     road_pixels = create_road_pixels(temperatures_trimmed.values, roadwidths)
+
 
     ## Calculating detections
     moving_average_pixels = detect_temperatures_below_moving_average(
@@ -101,6 +102,8 @@ def process_job(n, config):
         config['tolerance']
     )
 
+
+    ## Export data through csv-files
     if config['write_csv']:
         temperature_to_csv(file_path, temperatures_trimmed, metadata, road_pixels)
         detections_to_csv(
@@ -123,31 +126,6 @@ def process_job(n, config):
 
     for fig in figures.values():
         plt.close(fig)
-
-
-def clean_data(temperatures, config):
-    trim_result = trim_temperature_data(
-        temperatures.values,
-        config['autotrim_temperature'],
-        config['autotrim_percentage']
-    )
-    column_start, column_end, row_start, row_end = trim_result
-    temperatures_trimmed = temperatures.iloc[row_start:row_end, column_start:column_end]
-
-    lane_result = detect_paving_lanes(
-        temperatures_trimmed,
-        config['lane_threshold']
-    )
-
-    lane_start, lane_end = lane_result[config['lane_to_use']]
-    temperatures_trimmed = temperatures_trimmed.iloc[:, lane_start:lane_end]
-    roadwidths = estimate_road_width(
-        temperatures_trimmed.values,
-        config['roadwidth_threshold'],
-        config['roadwidth_adjust_left'],
-        config['roadwidth_adjust_right']
-    )
-    return temperatures_trimmed, trim_result, lane_result, roadwidths
 
 
 def plot_detections(k, figures, **kwargs):
