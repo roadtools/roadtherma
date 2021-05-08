@@ -1,30 +1,34 @@
 ---
 - job:
-    title: Example plot of test section         # String used as title in the figures created. Mandatory. 
+    # Below is a list of all the different configuration options and their default values, i.e., if omitted in a job-configuratoin, this is the values being used.
+    title: Example plot of test section         # String used as title in the figures created. Mandatory.
     file_path: /path/in/linux/for/data_file.txt # Path of the data file to process. Mandatory.
     reader: voegele_example                     # Parser used when loading data file. Possible parsers: "TF", "voegele_taulov", "voegele_example" or "voegele_M119".
     pixel_width: 0.25                           # Resolution (in meters) of pixels in the transversal direction (the horizontal resolution is derived from the chainage data).
-    plotting_segments: 1         # Number of segments that the data is partitioned into before being plotted. If set to 1 the entire dataset is plotted into figure (for each plot-type). Default: 1
-    show_plots: True             # Whether or not to show plots. Default: True
-    save_figures: True           # Whether or not to save the generated plots as png-files instead of showing them. Default: True
-    print_stats: True            # Whether or not to print summary statistics for each dataset. Default: True
-    write_csv: True              # Whether or not to write csv files for post-analysis. Default: True
-    autotrim_temperature: 80.0   # Temperature threshold for the data trimming step. Default: 80.0
-    autotrim_percentage: 0.2     # Percentage threshold of data below <autotrim_temperature> in order for an edge longitudinal line to be removed. Default: 0.2
-    roadwidth_threshold: 80.0    # Threshold temperature used when estimating the road width. Default: 80.0
-    roadwidth_adjust_left: 2     # Additional number of pixels to cut off left edge after estimating road width. Default: 2
-    roadwidth_adjust_right: 2    # Additional number of pixels to cut off right edge after estimating road width. Default: 2
-    lane_enabled: True           # Whether or not to try and identify lanes. Default: True
-    lane_threshold: 110.0        # Threshold temperature used when detecting the paving lane. Default: 110.0
-    lane_to_use: varmest         # Whether to use the "coldest" or "warmest" lane for detections. Default: "warmest"
-    gradient_enabled: True       # Whether or not to make detections using the "gradient" method. Default: True
-    gradient_tolerance: 10.0     # Tolerance on the temperature difference during temperature gradient detection. Default: 10.0
-    moving_average_enabled: True # Whether or not to make detections using the "moving average" method. Default: True
-    moving_average_window: 100.0 # Windowsize in meter to calculate (centered) moving average. Default 100.0
-    moving_average_percent: 90.0 # Percentage used to detect low temperatures, i.e., road pixels where pixel < "percentage of moving average temperature"
-    cluster_npixels: 0           # Minimum amount of pixels in a cluster. Clusters below this value will be discarded. Default: 0
-    cluster_sqm: 0.0             # Minimum size of a cluster in square meters. Clusters below this value will be discarded. Default: 0.0
-    tolerance: [5, 20, 1]        # Range of tolerance temperature values '[<start>, <end>, <step size>]' to use when plotting percentage of road that is comprised of high gradients vs gradient tolerance. Default: [5, 20, 1]
+    plotting_segments: 1       # Number of segments that the data is partitioned into before being plotted. If set to 1 the entire dataset is plotted into figure (for each plot-type).
+    show_plots: True           # Whether or not to show plots of data cleaning and enabled detections.
+    save_figures: True         # Whether or not to save the generated plots as png-files instead of showing them.
+    write_csv: True            # Whether or not to write csv files for post-analysis.
+    autotrim_temperature: 80.0 # Temperature threshold for the data trimming step.
+    autotrim_percentage: 0.2   # Percentage threshold of data below <autotrim_temperature> in order for an edge longitudinal line to be removed.
+    roadwidth_threshold: 80.0  # Threshold temperature used when estimating the road width.
+    roadwidth_adjust_left: 2   # Additional number of pixels to cut off left edge after estimating road width.
+    roadwidth_adjust_right: 2  # Additional number of pixels to cut off right edge after estimating road width.
+    lane_enabled: True         # Whether or not to try and identify lanes.
+    lane_threshold: 110.0      # Threshold temperature used when detecting the paving lane.
+    lane_to_use: varmest       # Whether to use the "coldest" or "warmest" lane for detections.
+    roller_detect_enabled: True        # Whether or not to use roller_detection.
+    roller_detect_temperature: 50      # Threshold temperature used in roller-detection (road temperature pixels below this temperature is categorized as roller).
+    roller_detect_interpolation: True  # If set to True the pixels identified as being the roller is interpolated with mean temperature of the road
+    gradient_enabled: True             # Whether or not to make detections using the "gradient" method.
+    gradient_tolerance: 10.0           # Tolerance on the temperature difference during temperature gradient detection.
+    moving_average_enabled: True       # Whether or not to make detections using the "moving average" method.
+    moving_average_window: 100.0       # Windowsize in meter to calculate (centered) moving average.
+    moving_average_percent: 90.0       # Percentage used to detect low temperatures, i.e., road pixels where pixel < "percentage of moving average temperature"
+    gradient_statistics_enabled: False # Whether or not to calculate and plot gradient statistics
+    cluster_npixels: 0           # Minimum amount of pixels in a cluster. Clusters below this value will be discarded.
+    cluster_sqm: 0.0             # Minimum size of a cluster in square meters. Clusters below this value will be discarded.
+    tolerance: [5, 20, 1]        # Range of tolerance temperature values '[<start>, <end>, <step size>]' to use when plotting percentage of road that is comprised of high gradients vs gradient tolerance.
 
 - job:
     title: Example plot of test section                # Mandatory.

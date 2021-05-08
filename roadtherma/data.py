@@ -9,14 +9,18 @@ def load_data(filepath, reader):
     return readers[reader](filepath)
 
 
-def create_trimming_result_pixels(pixels_raw, trim_result, lane_result, roadwidths):
+def create_trimming_result_pixels(pixels_raw, trim_result, lane_result, roadwidths, roller_pixels, config):
     pixel_category = np.zeros(pixels_raw.shape, dtype='int')
     trim_col_start, trim_col_end, trim_row_start, trim_row_end = trim_result
     lane_start, lane_end = lane_result
-    view = pixel_category[trim_row_start:trim_row_end, trim_col_start:trim_col_end][:, lane_start:lane_end]
+    view = pixel_category[trim_row_start:trim_row_end, trim_col_start:trim_col_end]
 
     for longitudinal_idx, (road_start, road_end) in enumerate(roadwidths):
-        view[longitudinal_idx, road_start:road_end] = 1
+        view[:, lane_start:lane_end][longitudinal_idx, road_start:road_end] = 1
+
+    if config['roller_detect_enabled']:
+        view[roller_pixels] = 2
+
     return pixel_category
 
 

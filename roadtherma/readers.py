@@ -29,6 +29,13 @@ def _read_vogele_M119(filename):
     return df
 
 
+def _read_voegele_roller_example(filename):
+    columns = VOEGELE_BASE_COLUMNS + ['signal_quality'] + temperatures_voegele
+    df = pd.read_csv(filename, skiprows=2, delimiter=';', names=columns, decimal=',')
+    _convert_vogele_timestamps(df, "%d-%m-%Y %H:%M:%S UTC + 02:00") # NOTE only difference between this and _read_vogele_M30 is the usage of "-" instead of "/" here (ffs!)
+    return df
+
+
 def _read_vogele_M30(filename):
     """
     NOTE removed last line in the file as it only contained 'No data to display'.
@@ -141,11 +148,12 @@ def _read_moba(filename):
 
 
 readers = {
-        'voegele_example':_read_vogele_example,
-        'voegele_M119':_read_vogele_M119,
-        'voegele_M30':_read_vogele_M30,
-        'voegele_taulov':_read_vogele_taulov,
-        'TF_old':_read_TF_old,
-        'TF_new':_read_TF_new,
-        'moba':_read_moba,
+        'voegele_example': _read_vogele_example,
+        'voegele_M119': _read_vogele_M119,
+        'voegele_roller_example': _read_voegele_roller_example,
+        'voegele_M30': _read_vogele_M30,
+        'voegele_taulov': _read_vogele_taulov,
+        'TF_old': _read_TF_old,
+        'TF_new': _read_TF_new,
+        'moba': _read_moba,
         }

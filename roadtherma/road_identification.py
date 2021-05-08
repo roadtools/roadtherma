@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import griddata
 
 from .utils import split_temperature_data, merge_temperature_data
 
@@ -163,3 +164,19 @@ def _estimate_road_edge_left(line, threshold):
         else:
             break
     return count
+
+
+def identify_roller_pixels(pixels, road_pixels, temperature_threshold):
+    below_threshold = pixels < temperature_threshold
+    roller_pixels = road_pixels & below_threshold
+    return roller_pixels
+
+
+def interpolate_roller_pixels(temperature_pixels, roller_pixels, road_pixels):
+    non_roller_road_pixels = road_pixels & ~roller_pixels
+    points = np.where(non_roller_road_pixels)
+    values = temperature_pixels[points]
+    points_interpolate = np.where(roller_pixels)
+    # values_interpolate = griddata(points, values, points_interpolate, method='linear')
+    # temperature_pixels[points_interpolate] = 200.0 # values_interpolate
+    temperature_pixels[points_interpolate] = np.mean(temperature_pixels[points])

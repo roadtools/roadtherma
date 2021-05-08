@@ -35,7 +35,7 @@ def plot_cleaning_results(config, metadata, temperatures, pixel_category):
         'temperature_title': "raw temperature data",
         'category_title': "road detection results"
     }
-    categories = ['non-road', 'road'] #, 'roller']
+    categories = ['non-road', 'road', 'roller']
     return _plot_heatmaps(
         titles,
         metadata,

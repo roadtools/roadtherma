@@ -10,7 +10,7 @@ from .utils import split_temperature_data
 from .export import temperature_to_csv, detections_to_csv, temperature_mean_to_csv, clusters_to_csv
 from .plotting import plot_statistics, plot_detections, plot_cleaning_results, save_figures
 from .clusters import create_cluster_dataframe
-from .road_identification import clean_data
+from .road_identification import clean_data, identify_roller_pixels, interpolate_roller_pixels
 from .detections import detect_high_gradient_pixels, detect_temperatures_below_moving_average
 
 matplotlib.rcParams.update({'font.size': 6})
@@ -43,12 +43,15 @@ def process_job(n, config):
     df = load_data(file_path, config['reader'])
     temperatures, metadata = split_temperature_data(df)
 
-    ## Initial trimming of the dataset
+    # Initial trimming & cleaning of the dataset
     temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(temperatures, config)
     road_pixels = create_road_pixels(temperatures_trimmed.values, roadwidths)
+    roller_pixels = identify_roller_pixels(
+        temperatures_trimmed.values, road_pixels, config['roller_detect_temperature'])
+    if config['roller_detect_interpolation']:
+        interpolate_roller_pixels(temperatures_trimmed.values, roller_pixels, road_pixels)
 
-
-    ## Calculating detections
+    # Calculating detections
     moving_average_pixels = detect_temperatures_below_moving_average(
         temperatures_trimmed,
         road_pixels,
@@ -63,47 +66,45 @@ def process_job(n, config):
         diagonal_adjacency=True
     )
 
-
-    ## Plot trimming results
+    # Plot trimming results
     pixel_category = create_trimming_result_pixels(
-        temperatures.values, trim_result,
-        lane_result[config['lane_to_use']], roadwidths
+        temperatures.values, trim_result, lane_result[config['lane_to_use']],
+        roadwidths, roller_pixels, config
     )
     for k, (start, end) in _iter_segments(temperatures, config['plotting_segments']):
         kwargs = {
-                'config': config,
-                'metadata': metadata.iloc[start:end, :],
-                'temperatures': temperatures.iloc[start:end, :],
-                'pixel_category': pixel_category[start:end, :],
-                }
+            'config': config,
+            'metadata': metadata.iloc[start:end, :],
+            'temperatures': temperatures.iloc[start:end, :],
+            'pixel_category': pixel_category[start:end, :],
+            }
         figures[f'fig_cleanup{k}'] = plot_cleaning_results(**kwargs)
 
-
-    ## Plot detections results
+    # Plot detections results
     for k, (start, end) in _iter_segments(temperatures_trimmed, config['plotting_segments']):
         kwargs = {
-                'config': config,
-                'metadata': metadata.iloc[start:end, :],
-                'temperatures_trimmed': temperatures_trimmed.iloc[start:end, :],
-                'roadwidths': roadwidths[start:end],
-                'road_pixels': road_pixels[start:end, :],
-                'moving_average_pixels': moving_average_pixels[start:end, :],
-                'gradient_pixels': gradient_pixels[start:end, :],
-                }
+            'config': config,
+            'metadata': metadata.iloc[start:end, :],
+            'temperatures_trimmed': temperatures_trimmed.iloc[start:end, :],
+            'roadwidths': roadwidths[start:end],
+            'road_pixels': road_pixels[start:end, :],
+            'moving_average_pixels': moving_average_pixels[start:end, :],
+            'gradient_pixels': gradient_pixels[start:end, :],
+            }
         plot_detections(n, figures, **kwargs)
 
+    # Plot statistics in relating to the gradient detection algorithm
+    if config['gradient_statistics_enabled']:
+        figures['stats'] = plot_statistics(
+            title,
+            temperatures_trimmed,
+            roadwidths,
+            road_pixels,
+            config['tolerance']
+        )
 
-    ## Plot statistics in relating to the gradient detection algorithm
-    figures['stats'] = plot_statistics(
-        title,
-        temperatures_trimmed,
-        roadwidths,
-        road_pixels,
-        config['tolerance']
-    )
 
-
-    ## Export data through csv-files
+    # Export data through csv-files
     if config['write_csv']:
         temperature_to_csv(file_path, temperatures_trimmed, metadata, road_pixels)
         detections_to_csv(
