@@ -16,7 +16,7 @@
     roadwidth_adjust_right: 2  # Additional number of pixels to cut off right edge after estimating road width.
     lane_enabled: True         # Whether or not to try and identify lanes.
     lane_threshold: 110.0      # Threshold temperature used when detecting the paving lane.
-    lane_to_use: varmest       # Whether to use the "coldest" or "warmest" lane for detections.
+    lane_to_use: warmest       # Whether to use the "coldest" or "warmest" lane for detections.
     roller_detect_enabled: True        # Whether or not to use roller_detection.
     roller_detect_temperature: 50      # Threshold temperature used in roller-detection (road temperature pixels below this temperature is categorized as roller).
     roller_detect_interpolation: True  # If set to True the pixels identified as being the roller is interpolated with mean temperature of the road

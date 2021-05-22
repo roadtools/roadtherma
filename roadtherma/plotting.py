@@ -31,7 +31,7 @@ def plot_detections(k, figures, **kwargs):
 
 def plot_cleaning_results(config, metadata, temperatures, pixel_category):
     titles = {
-        'main': config['title'],
+        'main': config['title'] + " - data cleaning",
         'temperature_title': "raw temperature data",
         'category_title': "road detection results"
     }
@@ -72,7 +72,7 @@ def plot_statistics(title, temperatures, roadwidths, road_pixels, tolerance):
 
 def _plot_moving_average_detection(moving_average_pixels, config, temperatures_trimmed, road_pixels, metadata, **_kwargs):
     titles = {
-        'main': config['title'],
+        'main': config['title'] + " - moving average",
         'temperature_title': "Temperatures",
         'category_title': "Moving average detection results"
     }
@@ -94,7 +94,7 @@ def _plot_moving_average_detection(moving_average_pixels, config, temperatures_t
 
 def _plot_gradient_detection(gradient_pixels, config, temperatures_trimmed, metadata, road_pixels, **_kwargs):
     titles = {
-        'main': config['title'],
+        'main': config['title'] + " - gradient",
         'temperature_title': "Temperatures",
         'category_title': "gradient detection results"
     }

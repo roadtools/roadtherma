@@ -108,7 +108,9 @@ def process_job(n, config):
     if config['write_csv']:
         temperature_to_csv(file_path, temperatures_trimmed, metadata, road_pixels)
         detections_to_csv(
-                file_path, temperatures_trimmed, metadata, road_pixels, moving_average_pixels)
+                file_path, 'moving_avg', temperatures_trimmed, metadata, road_pixels, moving_average_pixels)
+        detections_to_csv(
+                file_path, 'gradient', temperatures_trimmed, metadata, road_pixels, gradient_pixels)
         temperature_mean_to_csv(file_path, temperatures_trimmed, road_pixels)
         if config['gradient_enabled']:
             clusters = create_cluster_dataframe(
