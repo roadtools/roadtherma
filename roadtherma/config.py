@@ -7,7 +7,6 @@ class ConfigState:
         'save_figures': True,
         'print_stats': True,
         'write_csv': True,
-        'transversal_resolution': 0.25,
         'autotrim_temperature': 80.0,
         'autotrim_percentage': 0.2,
         'roadwidth_threshold': 80.0,

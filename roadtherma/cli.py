@@ -91,7 +91,7 @@ def process_job(n, config):
             'moving_average_pixels': moving_average_pixels[start:end, :],
             'gradient_pixels': gradient_pixels[start:end, :],
             }
-        plot_detections(n, figures, **kwargs)
+        plot_detections(k, figures, **kwargs)
 
     # Plot statistics in relating to the gradient detection algorithm
     if config['gradient_statistics_enabled']:
@@ -117,12 +117,12 @@ def process_job(n, config):
                 temperatures_trimmed.values,
                 clusters_raw,
                 metadata,
-                config['transversal_resolution']
+                config['pixel_width']
             )
             clusters_to_csv(file_path, clusters)
 
     if config['save_figures']:
-        save_figures(figures, n)
+        save_figures(figures)
 
     if config['show_plots']:
         plt.show()

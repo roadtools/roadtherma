@@ -15,7 +15,7 @@ def detect_temperatures_below_moving_average(temperatures, road_pixels, metadata
     The mo
     """
     temperature_pixels = temperatures.values
-    window = round(window_meters / longitudinal_resolution(metadata.distance))
+    window = int(round(window_meters / longitudinal_resolution(metadata.distance)))
     moving_average = _calc_moving_average(temperatures, road_pixels, window)
     moving_average_values = np.tile(moving_average.values, (temperature_pixels.shape[1], 1)).T
     ratio = percentage / 100
