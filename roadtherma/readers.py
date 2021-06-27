@@ -84,6 +84,15 @@ def _read_TF_new(filename):
     return df
 
 
+def _read_TF_notime(filename):
+    temperatures = ['T{}'.format(n) for n in range(281)]
+    columns = ['distance'] + ['latitude'] + ['longitude'] + temperatures
+    df = pd.read_csv(filename, skiprows=7, delimiter=',', names=columns)
+    df['time'] = pd.DataFrame({'time': pd.date_range('01-01-2012 23:50', periods=int(len(df)), freq='1min')})
+    del df['T280']
+    return df
+
+
 def _sensors_moba(filename):
     sensors = pd.read_csv(filename, sep=';', skiprows=13, nrows=1)
     sensors.columns = ['name', 'number', 'none']
@@ -155,5 +164,6 @@ readers = {
         'voegele_taulov': _read_vogele_taulov,
         'TF_old': _read_TF_old,
         'TF_new': _read_TF_new,
+        'TF_notime': _read_TF_notime,
         'moba': _read_moba,
         }
