@@ -133,7 +133,7 @@ def _plot_heatmaps(titles, metadata, pixel_width, pixel_temperatures, pixel_cate
     # Plot the raw data
     ax1.set_title(titles['temperature_title'])  # 'Raw data'
     _temperature_heatmap(ax1, pixel_temperatures,
-                        metadata.distance, pixel_width)
+                         metadata.distance, pixel_width)
     ax1.set_ylabel('chainage [m]')
 
     # Plot that shows identified road and high gradient pixels
@@ -145,16 +145,16 @@ def _plot_heatmaps(titles, metadata, pixel_width, pixel_temperatures, pixel_cate
 
 
 def _categorical_heatmap(ax, pixels, distance, pixel_width, categories):
-    _set_meter_ticks_on_axes(ax,
-                             longitudinal_resolution(distance),
-                             pixel_width,
-                             distance.iloc[0]
-                             )
     # set limits .5 outside true range
     colors = ["dimgray", "firebrick", "springgreen"]
-    cmap = ListedColormap(colors[:len(categories)])
-    mat = ax.imshow(pixels, aspect='auto', vmin=np.min(
-        pixels) - .5, vmax=np.max(pixels) + .5, cmap=cmap)
+    mat = ax.imshow(
+        pixels,
+        aspect='auto',
+        vmin=np.min(pixels) - .5,
+        vmax=np.max(pixels) + .5,
+        cmap=ListedColormap(colors[:len(categories)]),
+        extent=_create_extent(distance, pixels, pixel_width)
+    )
     # tell the colorbar to tick at integers
     cbar = plt.colorbar(mat, ax=ax, ticks=np.arange(
         np.min(pixels), np.max(pixels) + 1))
@@ -163,29 +163,14 @@ def _categorical_heatmap(ax, pixels, distance, pixel_width, categories):
 
 def _temperature_heatmap(ax, pixels, distance, pixel_width):
     """Make a heatmap of the temperature columns in the dataframe."""
-    _set_meter_ticks_on_axes(ax,
-                             longitudinal_resolution(distance),
-                             pixel_width,
-                             distance.iloc[0]
-                             )
-    mat = ax.imshow(pixels, aspect="auto", cmap='RdYlGn_r')
+    mat = ax.imshow(
+        pixels,
+        aspect="auto",
+        cmap='RdYlGn_r',
+        extent=_create_extent(distance, pixels, pixel_width)
+    )
     plt.colorbar(mat, ax=ax, label='Temperature [C]')
 
 
-def _set_meter_ticks_on_axes(ax, longitudinal_resolution, pixel_width, offset):
-    format_x = partial(_distance_formatter, width=pixel_width)
-    format_y = partial(_distance_formatter, width=longitudinal_resolution,
-                       integer=True, offset=offset)
-    formatter_x = FuncFormatter(format_x)
-    formatter_y = FuncFormatter(format_y)
-    ax.xaxis.set_major_formatter(formatter_x)
-    ax.yaxis.set_major_formatter(formatter_y)
-    ax.set_xlabel('Width [m]')
-
-
-def _distance_formatter(x, _pos, width, offset=None, integer=False):
-    if offset is None:
-        offset = 0
-    if integer:
-        return '{}'.format(int(round(x*width + offset)))
-    return '{:.1f}'.format(x*width + offset)
+def _create_extent(distance, pixels, pixel_width):
+    return (0, pixels.shape[1] * pixel_width, distance.iloc[-1], distance.iloc[0])

@@ -9,8 +9,13 @@
     show_plots: True           # Whether or not to show plots of data cleaning and enabled detections.
     save_figures: True         # Whether or not to save the generated plots as png-files instead of showing them.
     write_csv: True            # Whether or not to write csv files for post-analysis.
+    autotrim_enabled: True     # Whether or not to use autotrimming. If set to False the values in the four manual_trim_* entries is used to crop the data.
     autotrim_temperature: 80.0 # Temperature threshold for the data trimming step.
     autotrim_percentage: 0.2   # Percentage threshold of data below <autotrim_temperature> in order for an edge longitudinal line to be removed.
+    manual_trim_longitudinal_start: 0  # start point (denoted in meters) the dataset should cropped in the longitudional direction
+    manual_trim_longitudinal_end: 9999 # end point (denoted in meters) the dataset should cropped in the longitudional direction
+    manual_trim_transversal_start: 0   # start point (denoted in meters) the dataset should cropped in the transversal direction
+    manual_trim_transversal_end: 9999  # end point (denoted in meters) the dataset should cropped in the transversal direction
     roadwidth_threshold: 80.0  # Threshold temperature used when estimating the road width.
     roadwidth_adjust_left: 2   # Additional number of pixels to cut off left edge after estimating road width.
     roadwidth_adjust_right: 2  # Additional number of pixels to cut off right edge after estimating road width.

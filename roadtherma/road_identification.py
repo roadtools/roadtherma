@@ -4,7 +4,7 @@ from scipy.interpolate import griddata
 from .utils import split_temperature_data, merge_temperature_data
 
 
-def clean_data(temperatures, config):
+def clean_data(temperatures, metadata, config):
     """
     Clean and prepare data by running cleaning routines contained in this module, i.e.,
         - trim_temperature_data
@@ -14,11 +14,15 @@ def clean_data(temperatures, config):
     and return the results of these operations, together with a trimmed version of the
     temperature data.
     """
-    trim_result = trim_temperature_data(
-        temperatures.values,
-        config['autotrim_temperature'],
-        config['autotrim_percentage']
-    )
+    if config['autotrim_enabled']:
+        trim_result = trim_temperature_data(
+            temperatures.values,
+            config['autotrim_temperature'],
+            config['autotrim_percentage']
+        )
+    else:
+        trim_result = crop_temperature_data(temperatures, metadata, config)
+
     column_start, column_end, row_start, row_end = trim_result
     temperatures_trimmed = temperatures.iloc[row_start:row_end, column_start:column_end]
 
@@ -36,6 +40,28 @@ def clean_data(temperatures, config):
         config['roadwidth_adjust_right']
     )
     return temperatures_trimmed, trim_result, lane_result, roadwidths
+
+
+def crop_temperature_data(temperatures, metadata, config):
+    width = config['pixel_width']
+    length = len(temperatures.columns)
+    transversal = np.arange(0, length * width, width)
+    longi_start = config['manual_trim_longitudinal_start']
+    longi_end = config['manual_trim_longitudinal_end']
+    trans_start = config['manual_trim_transversal_start']
+    trans_end = config['manual_trim_transversal_end']
+
+    column_start, column_end = _interval2indices(transversal, trans_start, trans_end)
+    row_start, row_end = _interval2indices(metadata.distance.values, longi_start, longi_end)
+    return column_start, column_end, row_start, row_end
+
+
+def _interval2indices(distance, start, end):
+    indices, = np.where(distance > start)
+    start_idx = min(indices)
+    indices, = np.where(distance < end)
+    end_idx = max(indices)
+    return start_idx, end_idx
 
 
 def trim_temperature_data(pixels, threshold, autotrim_percentage):

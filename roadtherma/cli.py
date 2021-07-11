@@ -44,7 +44,7 @@ def process_job(n, config):
     temperatures, metadata = split_temperature_data(df)
 
     # Initial trimming & cleaning of the dataset
-    temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(temperatures, config)
+    temperatures_trimmed, trim_result, lane_result, roadwidths = clean_data(temperatures, metadata, config)
     road_pixels = create_road_pixels(temperatures_trimmed.values, roadwidths)
     roller_pixels = identify_roller_pixels(
         temperatures_trimmed.values, road_pixels, config['roller_detect_temperature'])
